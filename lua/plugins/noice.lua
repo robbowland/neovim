@@ -4,12 +4,23 @@ return {
     views = {
       cmdline_popup = {
         position = {
-          row = "50%",
+          row = "40%",
           col = "50%",
         },
         size = {
           width = 60,
           height = "auto",
+        },
+      },
+      popupmenu = {
+        relative = "editor",
+        position = {
+          row = "56%",
+          col = "50%",
+        },
+        size = {
+          width = 60,
+          height = 10,
         },
         border = {
           style = "rounded",
@@ -17,11 +28,15 @@ return {
         },
         win_options = {
           winhighlight = {
-            Normal = "NormalFloat",
-            FloatBorder = "NoiceCmdlinePopupBorder",
+            Normal = "Normal",
+            FloatBorder = "FloatBorder",
           },
         },
       },
+    },
+    presets = {
+      command_palette = false, -- Disable to avoid conflicts centering
+      lsp_doc_border = true,
     },
     cmdline = {
       format = {
