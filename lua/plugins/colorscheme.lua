@@ -21,8 +21,6 @@ return {
       })
 
       vim.cmd("colorscheme github_dark_default")
-      -- Load highlights for plugins after main these to avoid unwanted overwrites
-      require("config.highlights.snacks-indent").apply_theme()
     end,
   },
 }
