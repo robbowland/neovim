@@ -9,7 +9,7 @@ return {
           github_dark_default = {
             NotifyINFOBorder = { fg = "#FFFFFF" },
             FloatTitle = { fg = "#FFFFFF" },
-            FLoatBorder = { fg = "#FFFFFF" },
+            FloatBorder = { fg = "#FFFFFF" },
             Normal = { bg = "#000000" },
             NormalNC = { bg = "#000000" },
             NormalSB = { bg = "#000000" },
@@ -21,7 +21,6 @@ return {
       })
 
       vim.cmd("colorscheme github_dark_default")
-      vim.api.nvim_set_hl(0, "FloatBorder", { fg = "#ffffff", bg = "NONE" })
     end,
   },
 }
