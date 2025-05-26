@@ -6,7 +6,7 @@ return {
         pick = function(cmd, opts)
           return LazyVim.pick(cmd, opts)()
         end,
-        header = [[]],
+        header = [[]], -- Remove the 'Laxy' logo
         -- stylua: ignore
         ---@type snacks.dashboard.Item[]
         keys = {
