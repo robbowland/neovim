@@ -1,10 +1,12 @@
+local colors = require("config.colors")
+
 return {
   "folke/snacks.nvim",
   opts = function(_, opts)
     -- Set plugin-specific colours
     local function set_context_theme()
-      vim.api.nvim_set_hl(0, "SnacksIndent", { fg = "#141414" })
-      vim.api.nvim_set_hl(0, "SnacksIndentScope", { fg = "#5e5e5e" })
+      vim.api.nvim_set_hl(0, "SnacksIndent", { fg = colors.graydarker })
+      vim.api.nvim_set_hl(0, "SnacksIndentScope", { fg = colors.graydark })
     end
     -- Reapply after color scheme cahnges
     vim.api.nvim_create_autocmd("ColorScheme", {

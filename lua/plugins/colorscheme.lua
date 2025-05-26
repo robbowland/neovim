@@ -1,3 +1,5 @@
+local colors = require("config.colors")
+
 return {
   {
     "projekt0n/github-nvim-theme",
@@ -7,15 +9,15 @@ return {
       require("github-theme").setup({
         groups = {
           github_dark_default = {
-            NotifyINFOBorder = { fg = "#FFFFFF" },
-            FloatTitle = { fg = "#FFFFFF" },
-            FloatBorder = { fg = "#FFFFFF" },
-            Normal = { bg = "#000000" },
-            NormalNC = { bg = "#000000" },
-            NormalSB = { bg = "#000000" },
-            NormalFloat = { bg = "#000000" },
-            StatusLine = { bg = "#000000" },
-            CursorLine = { bg = "#0B0A0A" },
+            NotifyINFOBorder = { fg = colors.white },
+            FloatTitle = { fg = colors.white },
+            FloatBorder = { fg = colors.white },
+            Normal = { bg = colors.black },
+            NormalNC = { bg = colors.black },
+            NormalSB = { bg = colors.black },
+            NormalFloat = { bg = colors.black },
+            StatusLine = { bg = colors.black },
+            CursorLine = { bg = colors.graydarkest },
           },
         },
       })

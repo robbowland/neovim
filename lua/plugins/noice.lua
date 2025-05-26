@@ -1,10 +1,12 @@
+local colors = require("config.colors")
+
 return {
   "folke/noice.nvim",
   opts = function(_, opts)
     -- Set plugin-specific colours
     local function set_context_theme()
-      vim.api.nvim_set_hl(0, "NoiceCmdlinePopupBorder", { fg = "#ffffff", bg = "NONE" })
-      vim.api.nvim_set_hl(0, "NoiceCmdlineIconCmdline", { fg = "#d1a8fe", bg = "NONE" })
+      vim.api.nvim_set_hl(0, "NoiceCmdlinePopupBorder", { fg = colors.white })
+      vim.api.nvim_set_hl(0, "NoiceCmdlineIconCmdline", { fg = colors.magenta })
     end
     -- Reapply after color scheme changes
     vim.api.nvim_create_autocmd("ColorScheme", {

@@ -1,20 +1,11 @@
-local colors = {
-  cyan = "#79C0FF",
-  orange = "#FEA656",
-  red = "#FE7A72",
-  magenta = "#D1A8FE",
-  green = "#7EE687",
-  black = "#000000",
-  white = "#c6c6c6",
-  grey = "#303030",
-}
+local colors = require("config.colors")
 
 local theme = {
   normal = {
-    a = { fg = colors.grey },
-    x = { fg = colors.grey },
-    y = { fg = colors.grey },
-    z = { fg = colors.grey },
+    a = { fg = colors.graydark },
+    x = { fg = colors.graydark },
+    y = { fg = colors.graydark },
+    z = { fg = colors.graydark },
   },
   insert = { z = { fg = colors.magenta } },
   visual = { z = { fg = colors.orange } },
@@ -22,7 +13,7 @@ local theme = {
   replace = { z = { fg = colors.red } },
 
   inactive = {
-    a = { fg = colors.grey, bg = colors.black },
+    a = { fg = colors.graydark, bg = colors.black },
     b = { fg = colors.white, bg = colors.black },
     c = { fg = colors.white, bg = colors.black },
   },
