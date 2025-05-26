@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-<img src="https://github.com/robbowland/neovim/blob/main/.img/heading.png?raw=true" alt="neovim" width="600"></a>
+<img src="https://github.com/robbowland/neovim/blob/main/.github/img/heading.png?raw=true" alt="neovim" width="600"></a>
   <br>
 </h1>
 
