@@ -5,7 +5,7 @@
 </h1>
 
 <h4 align="center">
-<a href="https://www.robbow.land" target="_blank">My</a> <a href="https://github.com/neovim/neovim" target="_blank">neovim</a> configuration for simplicity, consistency & functionality.<br>Standing on the shoulders of <a href="https://github.com/neovim/neovim" target="_blank">LazyVim</a>💤.
+<a href="https://www.robbow.land" target="_blank">My</a> <a href="https://github.com/neovim/neovim" target="_blank">neovim</a> configuration for simplicity, consistency & functionality.<br>Standing on the shoulders of <a href="https://github.com/LazyVim/LazyVim" target="_blank">LazyVim</a>💤.
 </h4>
 
 <p align="center">
