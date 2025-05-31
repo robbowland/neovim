@@ -12,3 +12,10 @@ vim.keymap.set({ "n", "v" }, "c", '"_c', { desc = "Change without yanking" })
 
 -- Cmd + S : I constantly hit this from muscle memory, so why not?
 vim.keymap.set({ "n", "i", "v" }, "<D-s>", "<Cmd>w<CR>", { desc = "Save file" })
+
+--  3 line movements
+vim.keymap.set("n", "J", "3j", { noremap = true, silent = true })
+vim.keymap.set("n", "K", "3k", { noremap = true, silent = true })
+
+vim.keymap.set("v", "J", ":m '>+3<CR>gv=gv", { noremap = true, silent = true })
+vim.keymap.set("v", "K", ":m '<-3<CR>gv=gv", { noremap = true, silent = true })
