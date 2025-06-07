@@ -6,9 +6,15 @@ vim.keymap.set("i", "jk", "<Esc>", { desc = "Exit insert mode" })
 vim.keymap.set("n", "H", "^", { desc = "Move to beginning of line" })
 vim.keymap.set("n", "L", "$", { desc = "Move to end of line" })
 
-vim.keymap.set({ "n", "v" }, "x", '"_x', { desc = "Delete character without yanking" })
+-- Non-yank alterations
 vim.keymap.set({ "n", "v" }, "d", '"_d', { desc = "Delete without yanking" })
 vim.keymap.set({ "n", "v" }, "c", '"_c', { desc = "Change without yanking" })
+
+-- 'x' behaves like cut (delete + yank)
+vim.keymap.set("n", "x", '"*dl', { desc = "Cut character (yank and delete)" })
+vim.keymap.set("n", "X", '"*dh', { desc = "Cut previous character (yank and delete)" })
+vim.keymap.set("v", "x", '"+d', { desc = "Cut selection to clipboard" })
+vim.keymap.set("v", "X", '"+d', { desc = "Cut selection to clipboard" })
 
 -- Cmd + S : I constantly hit this from muscle memory, so why not?
 vim.keymap.set({ "n", "i", "v" }, "<D-s>", "<Cmd>w<CR>", { desc = "Save file" })
