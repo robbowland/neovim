@@ -14,6 +14,10 @@ map("n", "L", "$", { desc = "Move to end of line" })
 map({ "n", "v" }, "d", '"_d', { desc = "Delete without yanking" })
 map({ "n", "v" }, "c", '"_c', { desc = "Change without yanking" })
 
+-- Invert behaviour of 'p' & 'P'
+map({ "v", "x" }, "p", "P", { desc = "Paste without overwriting register" })
+map({ "v", "x" }, "P", "p", { desc = "Paste and overwrite register" })
+
 -- x acts as cut to clipboard
 map("n", "x", '"*dl', { desc = "Cut character (yank+delete)" })
 map("n", "X", '"*dh', { desc = "Cut previous character (yank+delete)" })
