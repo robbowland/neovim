@@ -4,5 +4,5 @@ return {
   -- prefer to use the buffer picker
   { "akinsho/bufferline.nvim", enabled = false },
   -- interfers with scrolling
-  { "echasnovski/mini.animate", enabled = false },
+  { "nvim-mini/mini.animate", enabled = false },
 }
