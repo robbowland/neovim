@@ -1,22 +1,31 @@
-local colors = require("config.colors")
-
 return {
   "neovim/nvim-lspconfig",
-  opts = function(_, opts)
-    local keys = require("lazyvim.plugins.lsp.keymaps").get()
-    -- Rebind LSP hover to ctrl + k
-    keys[#keys + 1] = { "K", false }
-    keys[#keys + 1] = { "<C-k>", vim.lsp.buf.hover, mode = "n" }
+  -- Highlight overrides that persist across :colorscheme
+  init = function()
+    local colors = require("config.colors")
 
-    -- Set plugin-specific colours
     local function set_context_theme()
+      -- Customize inlay hints (Neovim 0.10+ highlight group)
       vim.api.nvim_set_hl(0, "LspInlayHint", { bg = colors.black, fg = colors.graydark })
     end
-    -- Reapply after color scheme cahnges
+
+    -- Reapply after any colorscheme change
     vim.api.nvim_create_autocmd("ColorScheme", {
       pattern = "*",
       callback = set_context_theme,
     })
     set_context_theme()
   end,
+
+  keys = {
+    { "K", false, mode = "n" }, -- disable LazyVim's default hover on K
+    {
+      "<C-k>",
+      function()
+        vim.lsp.buf.hover()
+      end,
+      mode = "n",
+      desc = "LSP Hover",
+    },
+  },
 }
