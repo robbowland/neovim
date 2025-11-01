@@ -9,8 +9,11 @@ return {
       vim.api.nvim_set_hl(0, "LspInlayHint", { bg = colors.black, fg = colors.graydark })
     end
 
+    local augroup = vim.api.nvim_create_augroup("ConfigLspHighlights", { clear = true })
+
     -- Reapply after any colorscheme change
     vim.api.nvim_create_autocmd("ColorScheme", {
+      group = augroup,
       pattern = "*",
       callback = set_context_theme,
     })
