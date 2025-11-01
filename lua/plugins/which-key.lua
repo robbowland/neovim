@@ -22,7 +22,7 @@ return {
       fold_close = { icon = "◂", color = "yellow" },
       split_h = { icon = "󱂬", color = "blue" },
       split_v = { icon = "󱂬", color = "blue" },
-      close = { icon = "󰅖", color = "red" },
+      close = { icon = "󰅖", color = "red", sort = "󿿿close" },
       maximize = { icon = "󰊓", color = "azure" },
       equalize = { icon = "󰽙", color = "azure" },
       tab = { icon = "󰓩", color = "purple" },
@@ -92,7 +92,7 @@ return {
     local function icon_value(item)
       local value = item.icon
       if type(value) == "table" then
-        return value.icon or ""
+        return value.sort or value.icon or ""
       end
       return value or ""
     end
@@ -169,6 +169,7 @@ return {
       { "<leader>K", hidden = true, mode = "n" },
       { "<leader>ft", hidden = true, mode = "n" },
       { "<leader>fT", hidden = true, mode = "n" },
+      { "<leader>wd", hidden = true, mode = "n" },
       {
         mode = "n",
         {
@@ -235,10 +236,6 @@ return {
           icon = icon("split_v"),
         },
         {
-          "<leader>wd",
-          icon = icon("close"),
-        },
-        {
           "<leader>ck",
           icon = icon("keyword"),
         },
@@ -257,6 +254,10 @@ return {
         {
           "<leader>wT",
           icon = icon("terminal"),
+        },
+        {
+          "<leader>wx",
+          icon = icon("close"),
         },
       },
       {

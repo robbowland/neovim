@@ -57,3 +57,5 @@ end, { desc = "Terminal (Root Dir)" })
 map("n", "<leader>wT", function()
   Snacks.terminal()
 end, { desc = "Terminal (cwd)" })
+
+map("n", "<leader>wx", "<C-w>c", { desc = "Delete Window", remap = true })
