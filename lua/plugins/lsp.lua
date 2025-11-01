@@ -17,15 +17,21 @@ return {
     set_context_theme()
   end,
 
-  keys = {
-    { "K", false, mode = "n" }, -- disable LazyVim's default hover on K
-    {
-      "<C-k>",
-      function()
-        vim.lsp.buf.hover()
-      end,
-      mode = "n",
-      desc = "LSP Hover",
+  opts = {
+    servers = {
+      ["*"] = {
+        -- Replace default hover keybind
+        keys = {
+          { "K", false },
+          {
+            "<C-k>",
+            function()
+              return vim.lsp.buf.hover()
+            end,
+            desc = "LSP Hover",
+          },
+        },
+      },
     },
   },
 }
