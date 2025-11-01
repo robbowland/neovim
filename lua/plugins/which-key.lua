@@ -118,7 +118,7 @@ return {
     })
 
     opts.win = vim.tbl_extend("force", opts.win or {}, {
-      padding = { 1, 3 },
+      padding = { 1, 2 },
       title = false,
     })
 
