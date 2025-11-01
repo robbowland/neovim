@@ -38,3 +38,22 @@ map("n", "<A-j>", ":m .+1<CR>==", { desc = "Move line down", noremap = true, sil
 map("n", "<A-k>", ":m .-2<CR>==", { desc = "Move line up", noremap = true, silent = true })
 map("i", "<A-j>", "<Esc>:m .+1<CR>==gi", { desc = "Move line down (insert)", noremap = true, silent = true })
 map("i", "<A-k>", "<Esc>:m .-2<CR>==gi", { desc = "Move line up (insert)", noremap = true, silent = true })
+
+-- Window splits under the <leader>w group
+map("n", "<leader>wh", "<C-w>s", { desc = "Split Window Below", remap = true })
+map("n", "<leader>wv", "<C-w>v", { desc = "Split Window Right", remap = true })
+
+-- Additional leader aliases for consistency in which-key
+map("n", "<leader>ck", "<cmd>norm! K<cr>", { desc = "Keyword Help" })
+map("n", "<leader>ul", "<cmd>Lazy<cr>", { desc = "Lazy" })
+map("n", "<leader>uL", function()
+  LazyVim.news.changelog()
+end, { desc = "LazyVim Changelog" })
+
+-- Terminal aliases under the <leader>w group
+map("n", "<leader>wt", function()
+  Snacks.terminal(nil, { cwd = LazyVim.root() })
+end, { desc = "Terminal (Root Dir)" })
+map("n", "<leader>wT", function()
+  Snacks.terminal()
+end, { desc = "Terminal (cwd)" })
