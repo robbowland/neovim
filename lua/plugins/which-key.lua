@@ -44,6 +44,14 @@ return {
       changelog = { icon = "󰋼", color = "yellow" },
       keyword = { icon = "󰜘", color = "orange" },
       terminal = { icon = "󰆍", color = "red" },
+      surround = { icon = "󰆌", color = "purple" },
+      surround_add = { icon = "󰐖", color = "green" },
+      surround_delete = { icon = "󰆴", color = "red" },
+      surround_find = { icon = "󰍉", color = "azure" },
+      surround_find_left = { icon = "󰍊", color = "azure" },
+      surround_highlight = { icon = "󰌁", color = "yellow" },
+      surround_replace = { icon = "󰬺", color = "orange" },
+      surround_update = { icon = "󱄄", color = "purple" },
     }
 
     local function icon(name)
@@ -69,6 +77,7 @@ return {
       ["Focus"] = "focus",
       ["Resize"] = "resize",
       ["goto"] = "goto",
+      ["Surround"] = "surround",
     }
 
     local function apply_group_icons(node)
@@ -223,7 +232,48 @@ return {
           end,
         },
       },
-      { "gs", hidden = true, mode = { "n", "v" } },
+      {
+        mode = { "n", "v" },
+        {
+          "gs",
+          group = "Surround",
+          icon = icon("surround"),
+        },
+      },
+      {
+        mode = { "n", "x" },
+        {
+          "gsa",
+          icon = icon("surround_add"),
+        },
+      },
+      {
+        mode = "n",
+        {
+          "gsd",
+          icon = icon("surround_delete"),
+        },
+        {
+          "gsf",
+          icon = icon("surround_find"),
+        },
+        {
+          "gsF",
+          icon = icon("surround_find_left"),
+        },
+        {
+          "gsh",
+          icon = icon("surround_highlight"),
+        },
+        {
+          "gsr",
+          icon = icon("surround_replace"),
+        },
+        {
+          "gsn",
+          icon = icon("surround_update"),
+        },
+      },
       { "z", group = "Folds", mode = { "n", "v" } },
       {
         mode = "n",
