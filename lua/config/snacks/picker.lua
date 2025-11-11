@@ -255,7 +255,7 @@ local function apply_picker_theme()
   local fg_file_sel = pick("white_bright", "white") or "#ffffff"
   local fg_dir_sel = pick("cyan_bright", "cyan", "blue") or "#a5d6ff"
 
-  local border_fg = pick("gray", "gray_bright", "white_dim") or "#6e7781"
+  local border_fg = pick("white", "gray_bright", "white_dim") or "#6e7781"
   local bg_normal = pick("surface_0", "black") or "#0a0a0a"
   local bg_selection = pick("surface_1", "gray_dark") or "#121212"
 
