@@ -7,8 +7,8 @@ return {
     picker.setup(opts, colors)
 
     local function set_indent_theme()
-      vim.api.nvim_set_hl(0, "SnacksIndent", { fg = colors.graydarker })
-      vim.api.nvim_set_hl(0, "SnacksIndentScope", { fg = colors.graydark })
+      vim.api.nvim_set_hl(0, "SnacksIndent", { fg = colors.gray_dim })
+      vim.api.nvim_set_hl(0, "SnacksIndentScope", { fg = colors.gray })
     end
 
     vim.api.nvim_create_autocmd("ColorScheme", {

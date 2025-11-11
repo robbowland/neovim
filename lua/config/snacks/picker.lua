@@ -1,6 +1,100 @@
+-- Snacks picker theming (standalone)
+-- Normal = base colors; Selection = microcontrast plate + bold + BRIGHT fg.
+-- Icons: auto-brighten DevIcon/MiniIcons on selection. Borders/chrome subdued.
+
 local M = {}
 
+-- state
 local icon_override_applied = false
+local icon_highlight_cache = {}
+M._colors = {}
+
+-- utils ----------------------------------------------------------------------
+
+local function sanitize_highlight_name(name)
+  return (name or "unknown"):gsub("[^%w_]", "_")
+end
+
+-- choose first present color key (supports old/new palette names)
+local function pick(...)
+  for i = 1, select("#", ...) do
+    local k = select(i, ...)
+    local v = k and M._colors[k] or nil
+    if type(v) == "string" and v:match("^#%x%x%x%x%x%x$") then
+      return v
+    end
+  end
+  return nil
+end
+
+-- hex helpers (+brighten) — all string-based (“#rrggbb”)
+local function hex_to_rgb(hex)
+  if type(hex) ~= "string" then
+    return
+  end
+  local r, g, b = hex:match("^#?(%x%x)(%x%x)(%x%x)$")
+  if not r then
+    return
+  end
+  return tonumber(r, 16), tonumber(g, 16), tonumber(b, 16)
+end
+
+local function clamp(x)
+  return math.max(0, math.min(255, x))
+end
+
+local function rgb_to_hex(r, g, b)
+  return string.format("#%02x%02x%02x", clamp(r), clamp(g), clamp(b))
+end
+
+local function brighten_hex(hex, pct) -- ~0.10..0.20
+  local r, g, b = hex_to_rgb(hex)
+  if not r then
+    return hex
+  end
+  local f = 1 + (pct or 0.15)
+  return rgb_to_hex(math.floor(r * f), math.floor(g * f), math.floor(b * f))
+end
+
+-- pull fg from an existing hl group; return "#rrggbb" or fallback
+local function hl_fg_hex(name, fallback_hex)
+  local ok, base = pcall(vim.api.nvim_get_hl, 0, { name = name, link = false })
+  local n = ok and base and base.fg or nil
+  if type(n) == "number" then
+    return string.format("#%06x", n)
+  end
+  return fallback_hex
+end
+
+-- icon highlight derivation ---------------------------------------------------
+
+local function create_icon_highlight(base_hl)
+  if not base_hl then
+    return "SnacksPickerIconSelected"
+  end
+  local cached = icon_highlight_cache[base_hl]
+  if cached then
+    return cached
+  end
+  local derived = "SnacksPickerIconSelected_" .. sanitize_highlight_name(base_hl)
+  icon_highlight_cache[base_hl] = derived
+
+  local base_hex = hl_fg_hex(base_hl, pick("white_bright", "white") or "#ffffff")
+  local bright = brighten_hex(base_hex, 0.15)
+
+  vim.api.nvim_set_hl(0, derived, { fg = bright, bg = "NONE", bold = true, italic = false })
+  return derived
+end
+
+local function refresh_icon_highlights()
+  for base_hl, derived in pairs(icon_highlight_cache) do
+    local base_hex = hl_fg_hex(base_hl, pick("white_bright", "white") or "#ffffff")
+    local bright = brighten_hex(base_hex, 0.15)
+    vim.api.nvim_set_hl(0, derived, { fg = bright, bg = "NONE", bold = true, italic = false })
+  end
+end
+
+-- layouts --------------------------------------------------------------------
 
 local function horizontal_layout()
   return {
@@ -41,11 +135,7 @@ local function vertical_layout()
       min_height = 24,
       border = "rounded",
       title = "{title} {live} {flags}",
-      {
-        win = "input",
-        height = 1,
-        border = "bottom",
-      },
+      { win = "input", height = 1, border = "bottom" },
       {
         box = "vertical",
         border = "none",
@@ -70,6 +160,8 @@ local function configure_layout(picker_opts)
   end
 end
 
+-- windows & formatting --------------------------------------------------------
+
 local function configure_windows(picker_opts)
   picker_opts.win = picker_opts.win or {}
   picker_opts.win.input = vim.tbl_deep_extend("force", picker_opts.win.input or {}, {
@@ -79,6 +171,7 @@ local function configure_windows(picker_opts)
   })
   picker_opts.win.list = vim.tbl_deep_extend("force", picker_opts.win.list or {}, {
     wo = {
+      -- CursorLine maps to our selection plate+bold
       winhighlight = "Normal:SnacksPickerNormal,FloatBorder:SnacksPickerBorder,CursorLine:SnacksPickerSelection",
     },
   })
@@ -97,6 +190,8 @@ local function configure_formatters(picker_opts)
   })
 end
 
+-- icon chunk override for selected row ---------------------------------------
+
 local function override_icon_highlight()
   if icon_override_applied then
     return
@@ -104,6 +199,7 @@ local function override_icon_highlight()
   icon_override_applied = true
   local picker_format = require("snacks.picker.format")
   local orig_filename = picker_format.filename
+
   picker_format.filename = function(item, picker)
     local ret = orig_filename(item, picker)
     if picker and picker.list and picker.list.cursor then
@@ -114,9 +210,10 @@ local function override_icon_highlight()
         local item_key = list:select_key(item)
         if cur_key == item_key then
           for _, chunk in ipairs(ret) do
-            if chunk.virtual and type(chunk[2]) == "string" then
-              if chunk[2]:match("^DevIcon") or chunk[2]:match("^MiniIcons") then
-                chunk[2] = "SnacksPickerIconSelected"
+            local hlname = chunk and chunk[2]
+            if type(hlname) == "string" then
+              if hlname:match("^DevIcon") or hlname:match("^MiniIcons") then
+                chunk[2] = create_icon_highlight(hlname)
                 break
               end
             end
@@ -127,6 +224,8 @@ local function override_icon_highlight()
     return ret
   end
 end
+
+-- live refresh on cursor move -------------------------------------------------
 
 local function wrap_on_change(picker_opts)
   if picker_opts._snacks_on_change_wrapped then
@@ -147,36 +246,73 @@ local function wrap_on_change(picker_opts)
   end
 end
 
-local function apply_picker_theme(colors)
-  vim.api.nvim_set_hl(0, "SnacksPickerNormal", { fg = colors.white, bg = colors.graydarkest })
-  vim.api.nvim_set_hl(0, "SnacksPickerBorder", { fg = colors.white, bg = colors.graydarkest })
-  vim.api.nvim_set_hl(0, "SnacksPickerPrompt", { fg = colors.magenta, bg = colors.graydarkest, bold = true })
-  vim.api.nvim_set_hl(0, "SnacksPickerTitle", { fg = colors.blue, bg = colors.graydarkest, bold = true })
-  vim.api.nvim_set_hl(0, "SnacksPickerSelection", { fg = colors.black, bg = colors.white, bold = true })
-  vim.api.nvim_set_hl(0, "SnacksPickerListCursorLine", { fg = colors.black, bg = colors.white, bold = true })
-  vim.api.nvim_set_hl(0, "SnacksPickerSelected", { fg = colors.black, bg = colors.white, bold = true })
-  vim.api.nvim_set_hl(0, "SnacksPickerIconSelected", { fg = colors.black, bg = colors.white, bold = true })
+-- highlights ------------------------------------------------------------------
+
+local function apply_picker_theme()
+  -- normal = base; selection = plate+bold+bright
+  local fg_base = pick("white", "gray") or "#e6edf3"
+  local fg_dir_base = pick("cyan", "blue") or "#79c0ff"
+  local fg_file_sel = pick("white_bright", "white") or "#ffffff"
+  local fg_dir_sel = pick("cyan_bright", "cyan", "blue") or "#a5d6ff"
+
+  local border_fg = pick("gray", "gray_bright", "white_dim") or "#6e7781"
+  local bg_normal = pick("surface_0", "black") or "#0a0a0a"
+  local bg_selection = pick("surface_1", "gray_dark") or "#121212"
+
+  -- window
+  vim.api.nvim_set_hl(0, "SnacksPickerNormal", { fg = fg_base, bg = bg_normal })
+
+  -- normal file/dir labels
+  vim.api.nvim_set_hl(0, "SnacksPickerFile", { fg = fg_base, bg = "NONE" })
+  vim.api.nvim_set_hl(0, "SnacksPickerDirectory", { fg = fg_dir_base, bg = "NONE" })
+  vim.api.nvim_set_hl(0, "SnacksPickerDir", { fg = fg_dir_base, bg = "NONE" })
+
+  -- selected file/dir (brighten on selection)
+  vim.api.nvim_set_hl(0, "SnacksPickerFileSelected", { fg = fg_file_sel, bg = bg_selection, bold = true })
+  vim.api.nvim_set_hl(0, "SnacksPickerDirectorySelected", { fg = fg_dir_sel, bg = bg_selection, bold = true })
+  vim.api.nvim_set_hl(0, "SnacksPickerDirSelected", { fg = fg_dir_sel, bg = bg_selection, bold = true })
+
+  -- chrome
+  vim.api.nvim_set_hl(0, "SnacksPickerBorder", { fg = border_fg, bg = "NONE" })
+  vim.api.nvim_set_hl(0, "SnacksPickerPrompt", { fg = pick("magenta", "cyan") or "#bc8cff", bg = "NONE", bold = true })
+  vim.api.nvim_set_hl(0, "SnacksPickerTitle", { fg = pick("blue", "cyan") or "#58a6ff", bg = "NONE", bold = true })
+
+  -- row plate (fg handled by *Selected groups)
+  local sel = { bg = bg_selection, bold = true, italic = false }
+  vim.api.nvim_set_hl(0, "SnacksPickerSelection", sel)
+  vim.api.nvim_set_hl(0, "SnacksPickerListCursorLine", sel)
+  vim.api.nvim_set_hl(0, "SnacksPickerSelected", sel)
+
+  refresh_icon_highlights()
 end
 
 local function setup_picker_highlights(colors)
-  apply_picker_theme(colors)
-  local group = vim.api.nvim_create_augroup("ConfigSnacksPickerTheme", { clear = true })
-  vim.api.nvim_create_autocmd("ColorScheme", {
+  M._colors = colors or {}
+  apply_picker_theme()
+  local group = vim.api.nvim_create_augroup("SnacksPickerThemeConfig", { clear = true })
+  vim.api.nvim_create_autocmd("ColorScheme", { -- single string event to placate LSP
     group = group,
     callback = function()
-      apply_picker_theme(colors)
+      apply_picker_theme()
     end,
   })
 end
 
+-- public API -----------------------------------------------------------------
+
 function M.setup(opts, colors)
+  opts = opts or {}
   opts.picker = opts.picker or {}
+  M._colors = colors or {}
+
   configure_layout(opts.picker)
   configure_windows(opts.picker)
   configure_formatters(opts.picker)
   override_icon_highlight()
   wrap_on_change(opts.picker)
-  setup_picker_highlights(colors)
+  setup_picker_highlights(M._colors)
+
+  return opts
 end
 
 return M

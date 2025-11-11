@@ -6,7 +6,7 @@ return {
     -- Set plugin-specific colours
     local function set_context_theme()
       vim.api.nvim_set_hl(0, "TreesitterContext", { bg = colors.black })
-      vim.api.nvim_set_hl(0, "TreesitterContextBottom", { underline = true, sp = colors.graydarker })
+      vim.api.nvim_set_hl(0, "TreesitterContextBottom", { underline = true, sp = colors.gray_dim })
     end
     -- Reapply after color scheme cahnges
     vim.api.nvim_create_autocmd("ColorScheme", {

@@ -2,10 +2,10 @@ local colors = require("config.colors")
 
 local theme = {
   normal = {
-    a = { fg = colors.graydark },
-    x = { fg = colors.graydark },
-    y = { fg = colors.graydark },
-    z = { fg = colors.graydark },
+    a = { fg = colors.gray_dim },
+    x = { fg = colors.gray_dim },
+    y = { fg = colors.gray_dim },
+    z = { fg = colors.gray_dim },
   },
   insert = { z = { fg = colors.magenta } },
   visual = { z = { fg = colors.orange } },
@@ -13,7 +13,7 @@ local theme = {
   replace = { z = { fg = colors.red } },
 
   inactive = {
-    a = { fg = colors.graydark, bg = colors.black },
+    a = { fg = colors.gray_dim, bg = colors.black },
     b = { fg = colors.white, bg = colors.black },
     c = { fg = colors.white, bg = colors.black },
   },

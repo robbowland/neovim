@@ -17,7 +17,7 @@ return {
             NormalSB = { bg = colors.black },
             NormalFloat = { bg = colors.black },
             StatusLine = { bg = colors.black },
-            CursorLine = { bg = colors.graydarkest },
+            CursorLine = { bg = colors.surface_0 },
           },
         },
       })
