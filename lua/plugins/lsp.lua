@@ -6,7 +6,7 @@ return {
 
     local function set_context_theme()
       -- Customize inlay hints (Neovim 0.10+ highlight group)
-      vim.api.nvim_set_hl(0, "LspInlayHint", { bg = colors.black, fg = colors.graydark })
+      vim.api.nvim_set_hl(0, "LspInlayHint", { bg = colors.black, fg = colors.gray_dim })
     end
 
     local augroup = vim.api.nvim_create_augroup("ConfigLspHighlights", { clear = true })
