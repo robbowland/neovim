@@ -27,6 +27,13 @@ map("v", "X", '"+d', { desc = "Cut selection to clipboard" })
 -- Cmd + S : I constantly hit this from muscle memory, so why not?
 map({ "n", "i", "v" }, "<D-s>", "<Cmd>w<CR>", { desc = "Save file" })
 
+-- Cmd + C/V : copy & paste with the system clipboard
+map("n", "<D-c>", '"+yy', { desc = "Copy line to clipboard" })
+map("v", "<D-c>", '"+y', { desc = "Copy selection to clipboard" })
+map("n", "<D-v>", '"+p', { desc = "Paste from clipboard" })
+map("v", "<D-v>", '"+p', { desc = "Paste from clipboard" })
+map("i", "<D-v>", "<C-r>+", { desc = "Paste from clipboard" })
+
 -- Move cursor 3 lines with Shift+J/K
 map({ "n", "v" }, "J", "3j", { desc = "Move down 3 lines", noremap = true, silent = true })
 map({ "n", "v" }, "K", "3k", { desc = "Move up 3 lines", noremap = true, silent = true })
