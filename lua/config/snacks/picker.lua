@@ -144,7 +144,10 @@ local function configure_windows(picker_opts)
     wo = { winhighlight = "Normal:SnacksPickerNormal,FloatBorder:SnacksPickerBorder" },
   })
   picker_opts.win.list = vim.tbl_deep_extend("force", picker_opts.win.list or {}, {
-    wo = { winhighlight = "Normal:SnacksPickerNormal,FloatBorder:SnacksPickerBorder,CursorLine:SnacksPickerSelection" },
+    wo = {
+      winhighlight = "Normal:SnacksPickerNormal,FloatBorder:SnacksPickerBorder,CursorLine:SnacksPickerSelection",
+      -- leave 'scroll' at default (half-page) so <C-d>/<C-u> behave normally
+    },
   })
   picker_opts.win.preview = vim.tbl_deep_extend("force", picker_opts.win.preview or {}, {
     wo = { winhighlight = "Normal:SnacksPickerNormal,FloatBorder:SnacksPickerBorder" },
@@ -157,6 +160,43 @@ local function configure_formatters(picker_opts)
     filename_first = true,
     truncate = "left",
   })
+end
+
+-- keymaps --------------------------------------------------------------------
+
+local function configure_keymaps(picker_opts)
+  picker_opts.win = picker_opts.win or {}
+  picker_opts.win.input = picker_opts.win.input or {}
+  picker_opts.win.list = picker_opts.win.list or {}
+  picker_opts.win.preview = picker_opts.win.preview or {}
+
+  local function extend_keys(win, new_keys)
+    win.keys = vim.tbl_extend("force", win.keys or {}, new_keys)
+  end
+
+  -- List navigation with Ctrl+J/K and Ctrl+U/D, preview scroll with Ctrl+Shift+J/K/U/D (cover both names)
+  local list_scroll = {
+    ["<C-j>"] = { "list_down", mode = { "i", "n" } },
+    ["<C-k>"] = { "list_up", mode = { "i", "n" } },
+    ["<C-d>"] = { "list_scroll_down", mode = { "i", "n" } },
+    ["<C-u>"] = { "list_scroll_up", mode = { "i", "n" } },
+  }
+  local preview_scroll = {
+    ["<C-S-j>"] = { "preview_scroll_down", mode = { "i", "n" } },
+    ["<C-S-k>"] = { "preview_scroll_up", mode = { "i", "n" } },
+    ["<C-J>"] = { "preview_scroll_down", mode = { "i", "n" } },
+    ["<C-K>"] = { "preview_scroll_up", mode = { "i", "n" } },
+    ["<C-S-d>"] = { "preview_scroll_down", mode = { "i", "n" } },
+    ["<C-S-u>"] = { "preview_scroll_up", mode = { "i", "n" } },
+    ["<C-D>"] = { "preview_scroll_down", mode = { "i", "n" } },
+    ["<C-U>"] = { "preview_scroll_up", mode = { "i", "n" } },
+  }
+
+  -- Apply to input/list windows so they work without changing focus.
+  extend_keys(picker_opts.win.input, vim.tbl_extend("force", {}, list_scroll, preview_scroll))
+  extend_keys(picker_opts.win.list, vim.tbl_extend("force", {}, list_scroll, preview_scroll))
+  -- Also apply inside the preview window itself (in case it's focused).
+  extend_keys(picker_opts.win.preview, preview_scroll)
 end
 
 -- icon chunk override for selected row ---------------------------------------
@@ -276,6 +316,7 @@ function M.setup(opts, colors)
   configure_layout(opts.picker)
   configure_windows(opts.picker)
   configure_formatters(opts.picker)
+  configure_keymaps(opts.picker)
   override_icon_highlight()
   wrap_on_change(opts.picker)
   setup_picker_highlights(M._colors)
