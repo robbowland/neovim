@@ -66,3 +66,67 @@ map("n", "<leader>wT", function()
 end, { desc = "Terminal (cwd)" })
 
 map("n", "<leader>wx", "<C-w>c", { desc = "Delete Window", remap = true })
+
+-- Yank code location (file path + line number)
+map("n", "<leader>yl", function()
+  local loc = vim.fn.expand("%:.") .. ":" .. vim.fn.line(".")
+  vim.fn.setreg("+", loc)
+  vim.notify(loc, vim.log.levels.INFO, { title = "Yanked location" })
+end, { desc = "Yank file location" })
+
+map("v", "<leader>yl", function()
+  local start_line = vim.fn.line("'<")
+  local end_line = vim.fn.line("'>")
+  local loc = vim.fn.expand("%:.") .. ":" .. start_line .. "-" .. end_line
+  vim.fn.setreg("+", loc)
+  vim.notify(loc, vim.log.levels.INFO, { title = "Yanked location" })
+end, { desc = "Yank file location (range)" })
+
+map({ "n", "v" }, "<leader>yp", function()
+  local path = vim.fn.expand("%:.")
+  vim.fn.setreg("+", path)
+  vim.notify(path, vim.log.levels.INFO, { title = "Yanked path" })
+end, { desc = "Yank relative path" })
+
+map({ "n", "v" }, "<leader>yP", function()
+  local path = vim.fn.expand("%:p")
+  vim.fn.setreg("+", path)
+  vim.notify(path, vim.log.levels.INFO, { title = "Yanked path" })
+end, { desc = "Yank absolute path" })
+
+map({ "n", "v" }, "<leader>yf", function()
+  local name = vim.fn.expand("%:t")
+  vim.fn.setreg("+", name)
+  vim.notify(name, vim.log.levels.INFO, { title = "Yanked filename" })
+end, { desc = "Yank filename" })
+
+map("n", "<leader>yg", function()
+  local rel = vim.fn.expand("%:.")
+  local line = vim.fn.line(".")
+  local remote = vim.fn.system("git remote get-url origin 2>/dev/null"):gsub("\n", "")
+  local sha = vim.fn.system("git rev-parse HEAD 2>/dev/null"):gsub("\n", "")
+  if remote == "" or sha == "" then
+    vim.notify("Not in a git repo with a remote", vim.log.levels.WARN, { title = "Yank GitHub link" })
+    return
+  end
+  remote = remote:gsub("git@github.com:", "https://github.com/"):gsub("%.git$", "")
+  local url = remote .. "/blob/" .. sha .. "/" .. rel .. "#L" .. line
+  vim.fn.setreg("+", url)
+  vim.notify(url, vim.log.levels.INFO, { title = "Yanked GitHub link" })
+end, { desc = "Yank GitHub permalink" })
+
+map("v", "<leader>yg", function()
+  local rel = vim.fn.expand("%:.")
+  local start_line = vim.fn.line("'<")
+  local end_line = vim.fn.line("'>")
+  local remote = vim.fn.system("git remote get-url origin 2>/dev/null"):gsub("\n", "")
+  local sha = vim.fn.system("git rev-parse HEAD 2>/dev/null"):gsub("\n", "")
+  if remote == "" or sha == "" then
+    vim.notify("Not in a git repo with a remote", vim.log.levels.WARN, { title = "Yank GitHub link" })
+    return
+  end
+  remote = remote:gsub("git@github.com:", "https://github.com/"):gsub("%.git$", "")
+  local url = remote .. "/blob/" .. sha .. "/" .. rel .. "#L" .. start_line .. "-L" .. end_line
+  vim.fn.setreg("+", url)
+  vim.notify(url, vim.log.levels.INFO, { title = "Yanked GitHub link" })
+end, { desc = "Yank GitHub permalink (range)" })

@@ -52,6 +52,11 @@ return {
       surround_highlight = { icon = "󰌁", color = "yellow" },
       surround_replace = { icon = "󰬺", color = "orange" },
       surround_update = { icon = "󱄄", color = "purple" },
+      yank = { icon = "󰆏", color = "yellow" },
+      yank_path = { icon = "󰉋", color = "cyan" },
+      yank_abs = { icon = "󰉊", color = "cyan" },
+      yank_file = { icon = "󰈙", color = "cyan" },
+      yank_github = { icon = "󰊤", color = "purple" },
     }
 
     local function icon(name)
@@ -78,6 +83,7 @@ return {
       ["Resize"] = "resize",
       ["goto"] = "goto",
       ["Surround"] = "surround",
+      ["Yank"] = "yank",
     }
 
     local function apply_group_icons(node)
@@ -168,6 +174,7 @@ return {
         { "<leader>x", group = "Diagnostics" },
         { "<leader><tab>", group = "Workspace" },
         { "<leader>dp", group = "Profiler" },
+        { "<leader>y", group = "Yank" },
         { "g", group = "goto" },
       },
       { "<leader>-", hidden = true, mode = "n" },
@@ -315,6 +322,49 @@ return {
         {
           "<leader>ui",
           icon = icon("inspect"),
+        },
+        {
+          "<leader>yl",
+          icon = icon("yank"),
+        },
+        {
+          "<leader>yp",
+          icon = icon("yank_path"),
+        },
+        {
+          "<leader>yP",
+          icon = icon("yank_abs"),
+        },
+        {
+          "<leader>yf",
+          icon = icon("yank_file"),
+        },
+        {
+          "<leader>yg",
+          icon = icon("yank_github"),
+        },
+      },
+      {
+        mode = "v",
+        {
+          "<leader>yl",
+          icon = icon("yank"),
+        },
+        {
+          "<leader>yp",
+          icon = icon("yank_path"),
+        },
+        {
+          "<leader>yP",
+          icon = icon("yank_abs"),
+        },
+        {
+          "<leader>yf",
+          icon = icon("yank_file"),
+        },
+        {
+          "<leader>yg",
+          icon = icon("yank_github"),
         },
       },
       {
