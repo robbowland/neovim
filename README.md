@@ -10,13 +10,9 @@
 
 ## Themes
 
-The default remains `github_dark_default`. A local `micrographics` colorscheme is also available and mirrors the pure-invert, grayscale-scaffolding, and danger-red language used by the Obsidian and Pi themes.
+The default is the local `micrographics` colorscheme, which mirrors the pure-invert, grayscale-scaffolding, and danger-red language used by the Obsidian and Pi themes. The previous `github_dark_default` theme remains installed as a fallback.
 
-```vim
-:colorscheme micrographics
-```
-
-Set `background=light` before loading it for the positive-polarity variant. Switch back at any time with `:colorscheme github_dark_default`.
+Use `:set background=light | colorscheme micrographics` for positive polarity, or switch back at any time with `:colorscheme github_dark_default`.
 
 <p align="center">
   <a>sections</a> •
