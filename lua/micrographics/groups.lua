@@ -90,7 +90,7 @@ function M.build(p)
     Title = { fg = p.ink, bold = true },
 
     -- Legacy syntax: semantic anchors in ink, scaffolding in grey --------------
-    Comment = { fg = p.metadata, italic = true },
+    Comment = { fg = p.faint, italic = true },
     Constant = { fg = p.ink },
     String = { fg = p.ink },
     Character = { fg = p.ink },
@@ -111,7 +111,7 @@ function M.build(p)
     Define = { fg = p.metadata },
     Macro = { fg = p.metadata },
     PreCondit = { fg = p.metadata },
-    Type = { fg = p.faint },
+    Type = { fg = p.ink },
     StorageClass = { fg = p.faint, italic = true },
     Structure = { fg = p.faint },
     Typedef = { fg = p.faint },
@@ -179,7 +179,7 @@ function M.build(p)
   link_many(groups, { "@string", "@string.documentation", "@string.escape", "@string.regexp", "@character" }, "String")
   link_many(groups, { "@number", "@number.float", "@boolean" }, "Number")
   link_many(groups, { "@variable", "@variable.parameter", "@variable.member", "@property" }, "Identifier")
-  link_many(groups, { "@variable.builtin", "@variable.parameter.builtin" }, "Special")
+  link_many(groups, { "@variable.builtin", "@variable.parameter.builtin" }, "Identifier")
   link_many(
     groups,
     { "@function", "@function.call", "@function.method", "@function.method.call", "@function.macro" },
@@ -259,7 +259,7 @@ function M.build(p)
   link_many(groups, { "@lsp.type.string", "@lsp.type.regexp" }, "String")
   link_many(groups, { "@lsp.type.number", "@lsp.type.boolean", "@lsp.type.enumMember" }, "Constant")
   groups["@lsp.mod.deprecated"] = { fg = p.faint, strikethrough = true }
-  groups["@lsp.mod.defaultLibrary"] = { fg = p.metadata }
+  groups["@lsp.mod.defaultLibrary"] = { fg = p.ink }
   link_many(groups, { "@lsp.typemod.function.declaration", "@lsp.typemod.method.declaration" }, "Function")
   link_many(groups, { "@lsp.typemod.variable.readonly", "@lsp.typemod.property.readonly" }, "Constant")
 

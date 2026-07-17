@@ -21,6 +21,9 @@ return {
   end,
 
   opts = {
+    inlay_hints = {
+      exclude = { "vue", "javascript", "javascriptreact", "typescript", "typescriptreact" },
+    },
     servers = {
       ["*"] = {
         -- Replace default hover keybind

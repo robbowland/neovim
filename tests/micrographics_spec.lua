@@ -44,9 +44,12 @@ end)
 
 expect(vim.g.colors_name == "micrographics", "colorscheme should identify itself")
 expect_highlight("Normal", { fg = "#ffffff", bg = "#000000" })
-expect_highlight("Comment", { fg = "#999999", italic = true })
+expect_highlight("Comment", { fg = "#616161", italic = true })
 expect_highlight("Keyword", { fg = "#616161", italic = true })
+expect_highlight("Type", { fg = "#ffffff" })
 expect_highlight("Function", { fg = "#ffffff", bold = true })
+expect_highlight("@variable.builtin", { fg = "#ffffff" })
+expect_highlight("@lsp.mod.defaultLibrary", { fg = "#ffffff" })
 expect_highlight("DiagnosticError", { fg = "#ff3b2f" })
 expect_highlight("Visual", { fg = "#000000", bg = "#ffffff" })
 expect_highlight("SnacksPickerSelection", { fg = "#000000", bg = "#ffffff", bold = true })
@@ -82,9 +85,20 @@ vim.wait(100, function()
 end)
 
 expect_highlight("Normal", { fg = "#000000", bg = "#ffffff" })
-expect_highlight("Comment", { fg = "#666666", italic = true })
+expect_highlight("Comment", { fg = "#9e9e9e", italic = true })
 expect_highlight("Keyword", { fg = "#9e9e9e", italic = true })
+expect_highlight("Type", { fg = "#000000" })
+expect_highlight("@variable.builtin", { fg = "#000000" })
+expect_highlight("@lsp.mod.defaultLibrary", { fg = "#000000" })
 expect_highlight("DiagnosticError", { fg = "#c81e1e" })
 expect_highlight("Visual", { fg = "#ffffff", bg = "#000000" })
+
+local lsp_spec = dofile(root .. "/lua/plugins/lsp.lua")
+for _, filetype in ipairs({ "javascript", "javascriptreact", "typescript", "typescriptreact" }) do
+  expect(
+    vim.tbl_contains(lsp_spec.opts.inlay_hints.exclude, filetype),
+    filetype .. " should exclude default inlay hints"
+  )
+end
 
 print(("micrographics: %d checks passed"):format(checks))
