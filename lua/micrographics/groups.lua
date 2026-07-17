@@ -10,7 +10,10 @@ local function link_many(groups, names, target)
   set_many(groups, names, { link = target })
 end
 
-function M.build(p)
+function M.build(p, options)
+  options = options or {}
+  local punctuation = options.punctuation == "faint" and p.faint or p.ink
+
   local groups = {
     -- Editor and terminal chrome ------------------------------------------------
     Normal = { fg = p.ink, bg = p.paper },
@@ -24,8 +27,8 @@ function M.build(p)
     CursorIM = { fg = p.paper, bg = p.ink },
     TermCursor = { fg = p.paper, bg = p.ink },
     TermCursorNC = { fg = p.metadata, bg = p.paper },
-    CursorLine = { bg = p.paper, underline = true, sp = p.faint },
-    CursorColumn = { bg = p.paper, underline = true, sp = p.faint },
+    CursorLine = { bg = p.paper },
+    CursorColumn = { bg = p.paper },
     ColorColumn = { bg = p.faint },
     LineNr = { fg = p.faint, bg = p.paper },
     LineNrAbove = { fg = p.faint, bg = p.paper },
@@ -90,7 +93,7 @@ function M.build(p)
     Title = { fg = p.ink, bold = true },
 
     -- Legacy syntax: semantic anchors in ink, scaffolding in grey --------------
-    Comment = { fg = p.faint, italic = true },
+    Comment = { fg = p.metadata, italic = true },
     Constant = { fg = p.ink },
     String = { fg = p.ink },
     Character = { fg = p.ink },
@@ -208,7 +211,8 @@ function M.build(p)
   }, "Conditional")
   link_many(groups, { "@operator" }, "Operator")
   link_many(groups, { "@punctuation.delimiter", "@punctuation.special" }, "Delimiter")
-  link_many(groups, { "@punctuation.bracket" }, "Identifier")
+  groups["@punctuation.bracket"] = { fg = punctuation }
+  groups["@micrographics.punctuation"] = { fg = punctuation }
   link_many(groups, { "@tag", "@tag.builtin" }, "Tag")
   link_many(groups, { "@tag.attribute" }, "Identifier")
   link_many(groups, { "@tag.delimiter" }, "Delimiter")
@@ -314,9 +318,9 @@ function M.build(p)
   groups.SnacksNormal = { fg = p.ink, bg = p.paper }
   groups.SnacksNormalNC = { fg = p.metadata, bg = p.paper }
   groups.SnacksBackdrop = { bg = p.paper }
-  groups.SnacksIndent = { fg = p.faint }
-  groups.SnacksIndentScope = { fg = p.metadata }
-  groups.SnacksIndentChunk = { fg = p.metadata }
+  groups.SnacksIndent = { fg = p.paper }
+  groups.SnacksIndentScope = { fg = p.faint }
+  groups.SnacksIndentChunk = { fg = p.faint }
   groups.SnacksPickerNormal = { fg = p.ink, bg = p.paper }
   groups.SnacksPickerBorder = { fg = p.metadata, bg = p.paper }
   groups.SnacksPickerTitle = { fg = p.ink, bg = p.paper, bold = true }

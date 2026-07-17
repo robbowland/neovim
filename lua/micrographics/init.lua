@@ -3,6 +3,12 @@ local M = {}
 local palettes = require("micrographics.palette")
 local highlight_groups = require("micrographics.groups")
 
+local function current_options()
+  return {
+    punctuation = vim.g.micrographics_punctuation == "ink" and "ink" or "faint",
+  }
+end
+
 local function set_terminal_palette(p)
   local colors = {
     p.paper,
@@ -36,7 +42,7 @@ local function apply()
   local palette = palettes.get(vim.o.background)
   vim.g.micrographics_palette = palette
 
-  for name, value in pairs(highlight_groups.build(palette)) do
+  for name, value in pairs(highlight_groups.build(palette, current_options())) do
     vim.api.nvim_set_hl(0, name, value)
   end
 
@@ -52,6 +58,27 @@ function M.load()
 
   vim.g.colors_name = "micrographics"
   apply()
+
+  vim.api.nvim_create_user_command("MicrographicsPunctuation", function(command)
+    local value = command.args
+    if value == "" or value == "toggle" then
+      value = current_options().punctuation == "faint" and "ink" or "faint"
+    end
+    if value ~= "ink" and value ~= "faint" then
+      vim.notify("Micrographics punctuation must be 'ink', 'faint', or 'toggle'", vim.log.levels.ERROR)
+      return
+    end
+
+    vim.g.micrographics_punctuation = value
+    apply()
+  end, {
+    nargs = "?",
+    complete = function()
+      return { "ink", "faint", "toggle" }
+    end,
+    desc = "Set or toggle Micrographics punctuation contrast",
+    force = true,
+  })
 
   local group = vim.api.nvim_create_augroup("MicrographicsTheme", { clear = true })
   vim.api.nvim_create_autocmd("User", {
@@ -71,8 +98,12 @@ function M.palette(background)
   return palettes.get(background or vim.o.background)
 end
 
-function M.groups(background)
-  return highlight_groups.build(M.palette(background))
+function M.options()
+  return current_options()
+end
+
+function M.groups(background, options)
+  return highlight_groups.build(M.palette(background), options or current_options())
 end
 
 return M

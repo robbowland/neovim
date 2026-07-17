@@ -14,6 +14,8 @@ The default is the local `micrographics` colorscheme, which mirrors the pure-inv
 
 Use `:set background=light | colorscheme micrographics` for positive polarity, or switch back at any time with `:colorscheme github_dark_default`.
 
+`:MicrographicsPunctuation` toggles punctuation between the default faint treatment and full ink. Use `:MicrographicsPunctuation faint` or `:MicrographicsPunctuation ink` to select a mode explicitly.
+
 <p align="center">
   <a>sections</a> •
   <a>to</a> •

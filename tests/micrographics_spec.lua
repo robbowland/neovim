@@ -36,6 +36,7 @@ vim.api.nvim_create_autocmd("ColorScheme", {
   end,
 })
 
+vim.g.micrographics_punctuation = nil
 vim.o.background = "dark"
 vim.cmd("colorscheme micrographics")
 vim.wait(100, function()
@@ -44,12 +45,23 @@ end)
 
 expect(vim.g.colors_name == "micrographics", "colorscheme should identify itself")
 expect_highlight("Normal", { fg = "#ffffff", bg = "#000000" })
-expect_highlight("Comment", { fg = "#616161", italic = true })
+expect_highlight("Comment", { fg = "#999999", italic = true })
 expect_highlight("Keyword", { fg = "#616161", italic = true })
 expect_highlight("Type", { fg = "#ffffff" })
 expect_highlight("Function", { fg = "#ffffff", bold = true })
 expect_highlight("@variable.builtin", { fg = "#ffffff" })
 expect_highlight("@lsp.mod.defaultLibrary", { fg = "#ffffff" })
+expect_highlight("LspInlayHint", { fg = "#616161", bg = "#000000" })
+expect_highlight("@punctuation.bracket", { fg = "#616161" })
+expect_highlight("@micrographics.punctuation", { fg = "#616161" })
+expect_highlight("SnacksIndent", { fg = "#000000" })
+expect_highlight("SnacksIndentScope", { fg = "#616161" })
+expect(not vim.api.nvim_get_hl(0, { name = "CursorLine", link = false }).underline, "CursorLine should not underline")
+expect(vim.fn.exists(":MicrographicsPunctuation") == 2, "punctuation command should exist")
+vim.cmd("MicrographicsPunctuation ink")
+expect_highlight("@punctuation.bracket", { fg = "#ffffff" })
+expect_highlight("@micrographics.punctuation", { fg = "#ffffff" })
+vim.cmd("MicrographicsPunctuation faint")
 expect_highlight("DiagnosticError", { fg = "#ff3b2f" })
 expect_highlight("Visual", { fg = "#000000", bg = "#ffffff" })
 expect_highlight("SnacksPickerSelection", { fg = "#000000", bg = "#ffffff", bold = true })
@@ -85,20 +97,20 @@ vim.wait(100, function()
 end)
 
 expect_highlight("Normal", { fg = "#000000", bg = "#ffffff" })
-expect_highlight("Comment", { fg = "#9e9e9e", italic = true })
+expect_highlight("Comment", { fg = "#666666", italic = true })
 expect_highlight("Keyword", { fg = "#9e9e9e", italic = true })
 expect_highlight("Type", { fg = "#000000" })
 expect_highlight("@variable.builtin", { fg = "#000000" })
 expect_highlight("@lsp.mod.defaultLibrary", { fg = "#000000" })
+expect_highlight("LspInlayHint", { fg = "#9e9e9e", bg = "#ffffff" })
 expect_highlight("DiagnosticError", { fg = "#c81e1e" })
 expect_highlight("Visual", { fg = "#ffffff", bg = "#000000" })
 
-local lsp_spec = dofile(root .. "/lua/plugins/lsp.lua")
-for _, filetype in ipairs({ "javascript", "javascriptreact", "typescript", "typescriptreact" }) do
-  expect(
-    vim.tbl_contains(lsp_spec.opts.inlay_hints.exclude, filetype),
-    filetype .. " should exclude default inlay hints"
-  )
+for _, language in ipairs({ "javascript", "typescript", "tsx" }) do
+  local query_path = root .. "/after/queries/" .. language .. "/highlights.scm"
+  local query_source = table.concat(vim.fn.readfile(query_path), "\n")
+  local ok = pcall(vim.treesitter.query.parse, language, query_source)
+  expect(ok, language .. " punctuation query should parse")
 end
 
 print(("micrographics: %d checks passed"):format(checks))
