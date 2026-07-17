@@ -60,6 +60,22 @@ local function hl_fg_hex(name, fallback_hex)
   return (type(n) == "number") and string.format("#%06x", n) or fallback_hex
 end
 
+local function selected_icon_fg(base_hl)
+  if vim.g.colors_name == "micrographics" then
+    local ok, micrographics = pcall(require, "micrographics")
+    if ok then
+      return micrographics.palette().paper
+    end
+  end
+
+  local base_hex = hl_fg_hex(base_hl, pick("white_bright", "white") or "#ffffff")
+  return brighten_hex(base_hex, 0.15)
+end
+
+local function frame_border()
+  return vim.g.colors_name == "micrographics" and "single" or "rounded"
+end
+
 -- icon highlight derivation ---------------------------------------------------
 
 local function create_icon_highlight(base_hl)
@@ -73,17 +89,13 @@ local function create_icon_highlight(base_hl)
   local derived = "SnacksPickerIconSelected_" .. sanitize_highlight_name(base_hl)
   icon_highlight_cache[base_hl] = derived
 
-  local base_hex = hl_fg_hex(base_hl, pick("white_bright", "white") or "#ffffff")
-  local bright = brighten_hex(base_hex, 0.15)
-  vim.api.nvim_set_hl(0, derived, { fg = bright, bg = "NONE", bold = true })
+  vim.api.nvim_set_hl(0, derived, { fg = selected_icon_fg(base_hl), bg = "NONE", bold = true })
   return derived
 end
 
 local function refresh_icon_highlights()
   for base_hl, derived in pairs(icon_highlight_cache) do
-    local base_hex = hl_fg_hex(base_hl, pick("white_bright", "white") or "#ffffff")
-    local bright = brighten_hex(base_hex, 0.15)
-    vim.api.nvim_set_hl(0, derived, { fg = bright, bg = "NONE", bold = true })
+    vim.api.nvim_set_hl(0, derived, { fg = selected_icon_fg(base_hl), bg = "NONE", bold = true })
   end
 end
 
@@ -98,7 +110,7 @@ local function horizontal_layout()
       height = 0.88,
       min_height = 30,
       backdrop = false,
-      border = "rounded",
+      border = frame_border(),
       title = "{title} {live} {flags}",
       {
         box = "vertical",
@@ -120,7 +132,7 @@ local function vertical_layout()
       height = 0.94,
       min_width = 80,
       min_height = 24,
-      border = "rounded",
+      border = frame_border(),
       title = "{title} {live} {flags}",
       { win = "input", height = 1, border = "bottom" },
       { box = "vertical", border = "none", height = 0.45, { win = "list", border = "none" } },
