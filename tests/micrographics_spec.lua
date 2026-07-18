@@ -31,6 +31,7 @@ vim.api.nvim_create_autocmd("ColorScheme", {
   pattern = "micrographics",
   callback = function()
     vim.api.nvim_set_hl(0, "NoiceCmdlineIconCmdline", { fg = "#123456" })
+    vim.api.nvim_set_hl(0, "lualine_z_normal", { fg = "#123456", bg = "#654321" })
     vim.api.nvim_set_hl(0, "lualine_z_command", { fg = "#123456", bg = "#654321" })
     vim.api.nvim_set_hl(0, "DevIconLua", { fg = "#123456" })
   end,
@@ -66,7 +67,11 @@ expect_highlight("DiagnosticError", { fg = "#ff3b2f" })
 expect_highlight("Visual", { fg = "#000000", bg = "#ffffff" })
 expect_highlight("SnacksPickerSelection", { fg = "#000000", bg = "#ffffff", bold = true })
 expect_highlight("NoiceCmdlineIconCmdline", { fg = "#ffffff" })
-expect_highlight("lualine_z_command", { fg = "#000000", bg = "#ff3b2f", bold = true })
+expect_highlight("StatusLine", { fg = "#616161", bg = "#000000" })
+expect_highlight("WinBar", { fg = "#999999", bg = "#000000" })
+expect_highlight("TabLineSel", { fg = "#999999", bg = "#000000", bold = true })
+expect_highlight("lualine_z_normal", { fg = "#616161", bg = "#000000" })
+expect_highlight("lualine_z_command", { fg = "#ff3b2f", bg = "#000000", bold = true })
 expect_highlight("DevIconLua", { fg = "#999999" })
 expect(vim.g.terminal_color_1 == "#ff3b2f", "terminal danger colour should match the theme")
 

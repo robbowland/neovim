@@ -63,13 +63,13 @@ function M.build(p, options)
     PmenuSbar = { bg = p.paper },
     PmenuThumb = { bg = p.faint },
     WildMenu = { fg = p.paper, bg = p.ink, bold = true },
-    StatusLine = { fg = p.metadata, bg = p.paper },
+    StatusLine = { fg = p.faint, bg = p.paper },
     StatusLineNC = { fg = p.faint, bg = p.paper },
-    WinBar = { fg = p.ink, bg = p.paper, bold = true },
-    WinBarNC = { fg = p.metadata, bg = p.paper },
-    TabLine = { fg = p.metadata, bg = p.paper },
+    WinBar = { fg = p.metadata, bg = p.paper },
+    WinBarNC = { fg = p.faint, bg = p.paper },
+    TabLine = { fg = p.faint, bg = p.paper },
     TabLineFill = { fg = p.faint, bg = p.paper },
-    TabLineSel = { fg = p.paper, bg = p.ink, bold = true },
+    TabLineSel = { fg = p.metadata, bg = p.paper, bold = true },
     MsgArea = { fg = p.ink, bg = p.paper },
     MsgSeparator = { fg = p.faint, bg = p.paper },
     ModeMsg = { fg = p.ink, bold = true },
@@ -575,24 +575,17 @@ function M.apply_dynamic(p)
     elseif name:match("^DevIcon") or name:match("^MiniIcons") then
       vim.api.nvim_set_hl(0, name, { fg = p.metadata })
     elseif name:match("^lualine_") then
-      local spec = { fg = p.metadata, bg = p.paper }
+      -- Persistent chrome is scaffolding, not the editor's focal surface.
+      local spec = { fg = p.faint, bg = p.paper }
 
       if name:match("diff_removed") then
         spec.fg = p.danger
-      elseif name:match("diff_added") then
-        spec.fg = p.ink
-      elseif name:match("diff_modified") then
+      elseif name:match("diff_added") or name:match("diff_modified") then
         spec.fg = p.metadata
       elseif name:match("^lualine_z_command") or name:match("^lualine_z_replace") then
-        spec = { fg = p.paper, bg = p.danger, bold = true }
-      elseif name:match("^lualine_z_") then
-        spec = { fg = p.paper, bg = p.ink, bold = true }
-      elseif name:match("^lualine_a_inactive") then
-        spec.fg = p.faint
-      elseif name:match("^lualine_a_") then
-        spec = { fg = p.ink, bg = p.paper, bold = true }
-      elseif name == "lualine_transparent" then
-        spec.fg = p.faint
+        spec = { fg = p.danger, bg = p.paper, bold = true }
+      elseif name:match("^lualine_z_insert") or name:match("^lualine_z_visual") then
+        spec = { fg = p.metadata, bg = p.paper }
       end
 
       vim.api.nvim_set_hl(0, name, spec)
