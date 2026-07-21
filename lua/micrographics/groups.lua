@@ -176,10 +176,10 @@ function M.build(p, options)
   }
 
   -- Treesitter syntax ----------------------------------------------------------
-  link_many(groups, { "@comment", "@comment.documentation" }, "Comment")
+  link_many(groups, { "@comment", "@comment.documentation", "@string.documentation" }, "Comment")
   link_many(groups, { "@constant", "@constant.macro" }, "Constant")
   link_many(groups, { "@constant.builtin" }, "Special")
-  link_many(groups, { "@string", "@string.documentation", "@string.escape", "@string.regexp", "@character" }, "String")
+  link_many(groups, { "@string", "@string.escape", "@string.regexp", "@character" }, "String")
   link_many(groups, { "@number", "@number.float", "@boolean" }, "Number")
   link_many(groups, { "@variable", "@variable.parameter", "@variable.member", "@property" }, "Identifier")
   link_many(groups, { "@variable.builtin", "@variable.parameter.builtin" }, "Identifier")
