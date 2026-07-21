@@ -25,6 +25,129 @@ local function expect_highlight(name, expected)
   end
 end
 
+local standard_captures = {
+  "@variable",
+  "@variable.builtin",
+  "@variable.parameter",
+  "@variable.parameter.builtin",
+  "@variable.member",
+  "@constant",
+  "@constant.builtin",
+  "@constant.macro",
+  "@module",
+  "@module.builtin",
+  "@label",
+  "@string",
+  "@string.documentation",
+  "@string.regexp",
+  "@string.escape",
+  "@string.special",
+  "@string.special.symbol",
+  "@string.special.path",
+  "@string.special.url",
+  "@character",
+  "@character.special",
+  "@boolean",
+  "@number",
+  "@number.float",
+  "@type",
+  "@type.builtin",
+  "@type.definition",
+  "@attribute",
+  "@attribute.builtin",
+  "@property",
+  "@function",
+  "@function.builtin",
+  "@function.call",
+  "@function.macro",
+  "@function.method",
+  "@function.method.call",
+  "@constructor",
+  "@operator",
+  "@keyword",
+  "@keyword.coroutine",
+  "@keyword.function",
+  "@keyword.operator",
+  "@keyword.import",
+  "@keyword.type",
+  "@keyword.modifier",
+  "@keyword.repeat",
+  "@keyword.return",
+  "@keyword.debug",
+  "@keyword.exception",
+  "@keyword.conditional",
+  "@keyword.conditional.ternary",
+  "@keyword.directive",
+  "@keyword.directive.define",
+  "@punctuation.delimiter",
+  "@punctuation.bracket",
+  "@punctuation.special",
+  "@comment",
+  "@comment.documentation",
+  "@comment.error",
+  "@comment.warning",
+  "@comment.todo",
+  "@comment.note",
+  "@markup.strong",
+  "@markup.italic",
+  "@markup.strikethrough",
+  "@markup.underline",
+  "@markup.heading",
+  "@markup.heading.1",
+  "@markup.heading.2",
+  "@markup.heading.3",
+  "@markup.heading.4",
+  "@markup.heading.5",
+  "@markup.heading.6",
+  "@markup.quote",
+  "@markup.math",
+  "@markup.link",
+  "@markup.link.label",
+  "@markup.link.url",
+  "@markup.raw",
+  "@markup.raw.block",
+  "@markup.list",
+  "@markup.list.checked",
+  "@markup.list.unchecked",
+  "@diff.plus",
+  "@diff.minus",
+  "@diff.delta",
+  "@tag",
+  "@tag.builtin",
+  "@tag.attribute",
+  "@tag.delimiter",
+  "@conceal",
+  "@none",
+}
+
+local function expect_tree_sitter_coverage()
+  local groups = require("micrographics").groups("dark")
+  for _, capture in ipairs(standard_captures) do
+    expect(groups[capture] ~= nil, capture .. " should be defined by Micrographics")
+  end
+
+  local ignored_captures = { spell = true, nospell = true }
+  local languages = {}
+  for _, parser_path in ipairs(vim.api.nvim_get_runtime_file("parser/*.so", true)) do
+    languages[vim.fs.basename(parser_path):gsub("%.so$", "")] = true
+  end
+
+  for language in pairs(languages) do
+    local ok, query = pcall(vim.treesitter.query.get, language, "highlights")
+    expect(ok, language .. " highlights query should load")
+    if ok and query then
+      for _, capture in ipairs(query.captures) do
+        if not capture:match("^_") and not ignored_captures[capture] then
+          expect(
+            groups["@" .. capture] ~= nil,
+            ("@%s used by %s should be defined by Micrographics"):format(capture, language)
+          )
+        end
+      end
+    end
+  end
+end
+
 local override_group = vim.api.nvim_create_augroup("MicrographicsSpecOverrides", { clear = true })
 vim.api.nvim_create_autocmd("ColorScheme", {
   group = override_group,
@@ -45,9 +168,19 @@ vim.wait(100, function()
 end)
 
 expect(vim.g.colors_name == "micrographics", "colorscheme should identify itself")
+expect_tree_sitter_coverage()
 expect_highlight("Normal", { fg = "#ffffff", bg = "#000000" })
 expect_highlight("Comment", { fg = "#999999", italic = true })
 expect_highlight("@string.documentation", { fg = "#999999", italic = true })
+expect_highlight("@string.special.path", { fg = "#ffffff" })
+expect_highlight("@string.special.url", { fg = "#999999", underline = true })
+expect_highlight("@character.special", { fg = "#ffffff" })
+expect_highlight("@attribute.builtin", { fg = "#ffffff" })
+expect_highlight("@keyword.debug", { fg = "#616161", italic = true })
+expect_highlight("@comment.error", { fg = "#ff3b2f" })
+expect_highlight("@comment.warning", { fg = "#ff3b2f" })
+expect_highlight("@comment.todo", { fg = "#ffffff", bold = true })
+expect_highlight("@comment.note", { fg = "#999999", bold = true })
 expect_highlight("Keyword", { fg = "#616161", italic = true })
 expect_highlight("Type", { fg = "#ffffff" })
 expect_highlight("Function", { fg = "#ffffff", bold = true })

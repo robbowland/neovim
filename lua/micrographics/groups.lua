@@ -179,7 +179,17 @@ function M.build(p, options)
   link_many(groups, { "@comment", "@comment.documentation", "@string.documentation" }, "Comment")
   link_many(groups, { "@constant", "@constant.macro" }, "Constant")
   link_many(groups, { "@constant.builtin" }, "Special")
-  link_many(groups, { "@string", "@string.escape", "@string.regexp", "@character" }, "String")
+  link_many(groups, {
+    "@string",
+    "@string.escape",
+    "@string.regexp",
+    "@string.special",
+    "@string.special.symbol",
+    "@string.special.path",
+    "@character",
+    "@character.special",
+  }, "String")
+  groups["@string.special.url"] = { fg = p.metadata, underline = true }
   link_many(groups, { "@number", "@number.float", "@boolean" }, "Number")
   link_many(groups, { "@variable", "@variable.parameter", "@variable.member", "@property" }, "Identifier")
   link_many(groups, { "@variable.builtin", "@variable.parameter.builtin" }, "Identifier")
@@ -190,7 +200,11 @@ function M.build(p, options)
   )
   link_many(groups, { "@function.builtin", "@constructor" }, "Function")
   link_many(groups, { "@module", "@module.builtin", "@namespace" }, "Type")
-  link_many(groups, { "@type", "@type.builtin", "@type.definition", "@type.qualifier", "@attribute" }, "Type")
+  link_many(
+    groups,
+    { "@type", "@type.builtin", "@type.definition", "@type.qualifier", "@attribute", "@attribute.builtin" },
+    "Type"
+  )
   link_many(groups, {
     "@keyword",
     "@keyword.coroutine",
@@ -199,6 +213,7 @@ function M.build(p, options)
     "@keyword.import",
     "@keyword.type",
     "@keyword.modifier",
+    "@keyword.debug",
   }, "Keyword")
   link_many(groups, {
     "@keyword.conditional",
@@ -219,6 +234,10 @@ function M.build(p, options)
   link_many(groups, { "@label" }, "Label")
   link_many(groups, { "@conceal" }, "Conceal")
   link_many(groups, { "@none" }, "Normal")
+  link_many(groups, { "@comment.error" }, "DiagnosticError")
+  link_many(groups, { "@comment.warning" }, "DiagnosticWarn")
+  link_many(groups, { "@comment.todo" }, "Todo")
+  groups["@comment.note"] = { fg = p.metadata, bold = true }
 
   -- Markup keeps structure legible without a second colour system --------------
   groups["@markup.heading.1"] = { fg = p.ink, bold = true }
@@ -237,6 +256,7 @@ function M.build(p, options)
   groups["@markup.link.url"] = { fg = p.metadata, underline = true }
   groups["@markup.raw"] = { fg = p.ink }
   groups["@markup.raw.block"] = { fg = p.ink }
+  groups["@markup.math"] = { fg = p.ink }
   groups["@markup.quote"] = { fg = p.metadata, italic = true }
   groups["@markup.list"] = { fg = p.faint }
   groups["@markup.list.checked"] = { fg = p.faint, strikethrough = true }
@@ -248,7 +268,12 @@ function M.build(p, options)
   -- LSP semantic tokens follow the same syntax hierarchy -----------------------
   link_many(groups, { "@lsp.type.comment" }, "Comment")
   link_many(groups, { "@lsp.type.function", "@lsp.type.method", "@lsp.type.decorator" }, "Function")
-  link_many(groups, { "@lsp.type.variable", "@lsp.type.parameter", "@lsp.type.property" }, "Identifier")
+  link_many(groups, { "@lsp.type.macro" }, "Macro")
+  link_many(
+    groups,
+    { "@lsp.type.variable", "@lsp.type.parameter", "@lsp.type.property", "@lsp.type.event" },
+    "Identifier"
+  )
   link_many(groups, {
     "@lsp.type.class",
     "@lsp.type.enum",
