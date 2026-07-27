@@ -11,10 +11,9 @@ return {
     require("neotest").setup({
       adapters = {
         require("neotest-jest")({
-          jestCommand = "npx jest --",
           env = { CI = true },
-          cwd = function()
-            return vim.fn.getcwd()
+          cwd = function(path)
+            return vim.fs.root(path, "package.json")
           end,
         }),
       },

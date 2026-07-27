@@ -2,8 +2,8 @@ local tsserver_memory = 6144
 
 local tsserver_settings = {
   tsserver = {
-    -- Disable the extra syntax server so we only spawn one tsserver process
-    useSeparateSyntaxServer = false,
+    -- Use one tsserver process for syntax and semantic operations
+    useSyntaxServer = "never",
     -- Raise the memory ceiling to reduce out-of-memory crashes
     maxTsServerMemory = tsserver_memory,
   },
