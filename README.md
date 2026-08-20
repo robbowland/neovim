@@ -10,7 +10,7 @@
 
 ## Themes
 
-The default is the local `micrographics` colorscheme, which mirrors the pure-invert, grayscale-scaffolding, and danger-red language used by the Obsidian and Pi themes. The previous `github_dark_default` theme remains installed as a fallback.
+The default is the local `micrographics` colorscheme, which uses pure-invert surfaces, grayscale scaffolding, canonical `#39d97a` success and additions, and danger-red failures and deletions. The previous `github_dark_default` theme remains installed as a fallback.
 
 Use `:set background=light | colorscheme micrographics` for positive polarity, or switch back at any time with `:colorscheme github_dark_default`.
 

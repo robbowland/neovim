@@ -74,7 +74,7 @@ function M.build(p, options)
     MsgSeparator = { fg = p.faint, bg = p.paper },
     ModeMsg = { fg = p.ink, bold = true },
     MoreMsg = { fg = p.ink },
-    OkMsg = { fg = p.ink },
+    OkMsg = { fg = p.success },
     Question = { fg = p.ink, bold = true },
     ErrorMsg = { fg = p.danger, bold = true },
     WarningMsg = { fg = p.danger, bold = true },
@@ -132,10 +132,10 @@ function M.build(p, options)
     Italic = { italic = true },
 
     -- Diff and version-control state -------------------------------------------
-    Added = { fg = p.ink },
+    Added = { fg = p.success },
     Changed = { fg = p.metadata },
     Removed = { fg = p.danger },
-    DiffAdd = { fg = p.ink, bg = p.paper },
+    DiffAdd = { fg = p.success, bg = p.paper },
     DiffChange = { fg = p.metadata, bg = p.paper },
     DiffDelete = { fg = p.danger, bg = p.paper },
     DiffText = { fg = p.paper, bg = p.ink, bold = true },
@@ -145,17 +145,17 @@ function M.build(p, options)
     DiagnosticWarn = { fg = p.danger },
     DiagnosticInfo = { fg = p.ink },
     DiagnosticHint = { fg = p.metadata },
-    DiagnosticOk = { fg = p.ink },
+    DiagnosticOk = { fg = p.success },
     DiagnosticVirtualTextError = { fg = p.danger, italic = true },
     DiagnosticVirtualTextWarn = { fg = p.danger, italic = true },
     DiagnosticVirtualTextInfo = { fg = p.metadata, italic = true },
     DiagnosticVirtualTextHint = { fg = p.faint, italic = true },
-    DiagnosticVirtualTextOk = { fg = p.metadata, italic = true },
+    DiagnosticVirtualTextOk = { fg = p.success, italic = true },
     DiagnosticUnderlineError = { undercurl = true, sp = p.danger },
     DiagnosticUnderlineWarn = { undercurl = true, sp = p.danger },
     DiagnosticUnderlineInfo = { underline = true, sp = p.metadata },
     DiagnosticUnderlineHint = { underline = true, sp = p.faint },
-    DiagnosticUnderlineOk = { underline = true, sp = p.metadata },
+    DiagnosticUnderlineOk = { underline = true, sp = p.success },
     DiagnosticUnnecessary = { fg = p.faint },
     DiagnosticDeprecated = { fg = p.faint, strikethrough = true },
 
@@ -261,9 +261,9 @@ function M.build(p, options)
   groups["@markup.list"] = { fg = p.faint }
   groups["@markup.list.checked"] = { fg = p.faint, strikethrough = true }
   groups["@markup.list.unchecked"] = { fg = p.metadata }
-  link_many(groups, { "@diff.plus" }, "Added")
-  link_many(groups, { "@diff.delta" }, "Changed")
-  link_many(groups, { "@diff.minus" }, "Removed")
+  link_many(groups, { "@diff.plus", "diffAdded" }, "Added")
+  link_many(groups, { "@diff.delta", "diffChanged" }, "Changed")
+  link_many(groups, { "@diff.minus", "diffRemoved" }, "Removed")
 
   -- LSP semantic tokens follow the same syntax hierarchy -----------------------
   link_many(groups, { "@lsp.type.comment" }, "Comment")
@@ -330,7 +330,7 @@ function M.build(p, options)
   groups.NoiceConfirmBorder = { fg = p.metadata, bg = p.paper }
   groups.NoiceScrollbar = { bg = p.paper }
   groups.NoiceScrollbarThumb = { bg = p.faint }
-  groups.NoiceFormatProgressDone = { fg = p.ink }
+  groups.NoiceFormatProgressDone = { fg = p.success }
   groups.NoiceFormatProgressTodo = { fg = p.faint }
   groups.NoiceFormatLevelError = { fg = p.danger }
   groups.NoiceFormatLevelWarn = { fg = p.danger }
@@ -368,7 +368,7 @@ function M.build(p, options)
   groups.SnacksPickerDesc = { fg = p.metadata }
   groups.SnacksPickerDelim = { fg = p.faint }
   groups.SnacksPickerTotals = { fg = p.faint }
-  groups.SnacksPickerGitStatusAdded = { fg = p.ink }
+  groups.SnacksPickerGitStatusAdded = { fg = p.success }
   groups.SnacksPickerGitStatusModified = { fg = p.metadata }
   groups.SnacksPickerGitStatusDeleted = { fg = p.danger }
   groups.SnacksPickerGitStatusUnmerged = { fg = p.danger }
@@ -384,7 +384,7 @@ function M.build(p, options)
   groups.SnacksDashboardKey = { fg = p.paper, bg = p.ink, bold = true }
   groups.SnacksDashboardDir = { fg = p.faint }
   groups.SnacksDashboardFooter = { fg = p.faint }
-  groups.SnacksDiffAdd = { fg = p.ink }
+  groups.SnacksDiffAdd = { fg = p.success }
   groups.SnacksDiffDelete = { fg = p.danger }
   groups.SnacksDiffConflict = { fg = p.danger, bold = true }
   groups.SnacksDiffContext = { fg = p.metadata }
@@ -429,7 +429,7 @@ function M.build(p, options)
   groups.LazyComment = { fg = p.metadata, italic = true }
   groups.LazyDimmed = { fg = p.faint }
   groups.LazyReasonPlugin = { fg = p.faint }
-  groups.LazyProgressDone = { fg = p.ink }
+  groups.LazyProgressDone = { fg = p.success }
   groups.LazyProgressTodo = { fg = p.faint }
 
   groups.MasonNormal = { fg = p.ink, bg = p.paper }
@@ -466,7 +466,7 @@ function M.build(p, options)
   groups.AerialProtected = { fg = p.metadata }
 
   -- Test, debug, and task state -------------------------------------------------
-  groups.NeotestPassed = { fg = p.ink }
+  groups.NeotestPassed = { fg = p.success }
   groups.NeotestFailed = { fg = p.danger }
   groups.NeotestRunning = { fg = p.metadata }
   groups.NeotestSkipped = { fg = p.faint }
@@ -516,14 +516,14 @@ function M.build(p, options)
   groups.TodoSignNOTE = { fg = p.metadata }
 
   -- Git and editing actions -----------------------------------------------------
-  groups.GitSignsAdd = { fg = p.ink }
+  groups.GitSignsAdd = { fg = p.success }
   groups.GitSignsChange = { fg = p.metadata }
   groups.GitSignsDelete = { fg = p.danger }
   groups.GitSignsTopdelete = { fg = p.danger }
   groups.GitSignsChangedelete = { fg = p.danger }
-  groups.GitSignsUntracked = { fg = p.faint }
+  groups.GitSignsUntracked = { fg = p.success }
   groups.GitSignsCurrentLineBlame = { fg = p.faint, italic = true }
-  groups.GitSignsAddInline = { fg = p.paper, bg = p.ink }
+  groups.GitSignsAddInline = { fg = p.success, bg = p.paper }
   groups.GitSignsDeleteInline = { fg = p.paper, bg = p.danger }
   groups.GitSignsChangeInline = { fg = p.ink, bg = p.faint }
   groups.GitConflictCurrent = { fg = p.ink, bg = p.paper }
@@ -567,7 +567,7 @@ function M.build(p, options)
   groups.RenderMarkdownUnchecked = { fg = p.metadata }
   groups.RenderMarkdownChecked = { fg = p.faint, strikethrough = true }
   groups.RenderMarkdownTodo = { fg = p.ink, bold = true }
-  groups.RenderMarkdownSuccess = { fg = p.ink }
+  groups.RenderMarkdownSuccess = { fg = p.success }
   groups.RenderMarkdownInfo = { fg = p.metadata }
   groups.RenderMarkdownHint = { fg = p.faint }
   groups.RenderMarkdownWarn = { fg = p.danger }
@@ -605,7 +605,9 @@ function M.apply_dynamic(p)
 
       if name:match("diff_removed") then
         spec.fg = p.danger
-      elseif name:match("diff_added") or name:match("diff_modified") then
+      elseif name:match("diff_added") then
+        spec.fg = p.success
+      elseif name:match("diff_modified") then
         spec.fg = p.metadata
       elseif name:match("^lualine_z_command") or name:match("^lualine_z_replace") then
         spec = { fg = p.danger, bg = p.paper, bold = true }

@@ -13,7 +13,7 @@ local function set_terminal_palette(p)
   local colors = {
     p.paper,
     p.danger,
-    p.ink,
+    p.success,
     p.metadata,
     p.metadata,
     p.metadata,
@@ -21,7 +21,7 @@ local function set_terminal_palette(p)
     p.metadata,
     p.faint,
     p.danger,
-    p.ink,
+    p.success,
     p.ink,
     p.ink,
     p.ink,

@@ -9,6 +9,11 @@ local function expect(condition, message)
   assert(condition, message)
 end
 
+local function expect_foreground(name, color)
+  local actual = vim.api.nvim_get_hl(0, { name = name, link = false }).fg
+  expect(actual == tonumber(color:sub(2), 16), name .. " should use " .. color)
+end
+
 local function expect_mapping(lhs, command, description)
   local configured
   for _, mapping in ipairs(spec.keys) do
@@ -37,6 +42,21 @@ end)
 
 expect(vim.fn.exists(":DiffviewOpen") == 2, ":DiffviewOpen should be registered")
 expect(vim.fn.exists(":DiffviewFileHistory") == 2, ":DiffviewFileHistory should be registered")
+
+vim.cmd("DiffviewOpen HEAD")
+expect(vim.wait(1_000, function()
+  return package.loaded["diffview"] ~= nil
+end), "Diffview should load")
+expect_foreground("DiffviewFilePanelInsertions", "#39d97a")
+expect_foreground("DiffviewStatusAdded", "#39d97a")
+expect_foreground("DiffviewStatusModified", "#999999")
+expect_foreground("DiffviewFilePanelDeletions", "#ff3b2f")
+expect_foreground("DiffviewStatusDeleted", "#ff3b2f")
+expect_foreground("DiffviewDiffAdd", "#39d97a")
+if require("diffview.lib").get_current_view() ~= nil then
+  vim.cmd("DiffviewClose")
+end
+
 expect_mapping("<leader>gd", "DiffviewOpen HEAD", "Git Diff (Working Tree)")
 expect_mapping(
   "<leader>gD",
