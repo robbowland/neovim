@@ -1,6 +1,7 @@
 local source = debug.getinfo(1, "S").source:sub(2)
 local root = vim.fs.dirname(vim.fs.dirname(source))
 local spec = dofile(root .. "/lua/plugins/diffview.lua")
+local snacks_spec = dofile(root .. "/lua/plugins/snacks.lua")
 local checks = 0
 
 local function expect(condition, message)
@@ -21,6 +22,14 @@ local function expect_mapping(lhs, command, description)
   expect(configured[2] == "<cmd>" .. command .. "<cr>", lhs .. " should run " .. command)
   expect(configured.desc == description, lhs .. " should be described as " .. description)
 end
+
+local snacks_keys = snacks_spec.keys(nil, {
+  { "<leader>gd", desc = "Git Diff (hunks)" },
+  { "<leader>gD", desc = "Git Diff (origin)" },
+  { "<leader>gs", desc = "Git Status" },
+})
+expect(#snacks_keys == 1, "Snacks should not own Diffview mappings")
+expect(snacks_keys[1][1] == "<leader>gs", "Snacks should preserve unrelated Git mappings")
 
 vim.wait(1_000, function()
   return vim.fn.exists(":DiffviewOpen") == 2

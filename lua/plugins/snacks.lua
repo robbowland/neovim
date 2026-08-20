@@ -6,8 +6,9 @@ return {
   keys = function(_, keys)
     local filtered = {}
     for _, key in ipairs(keys or {}) do
+      local lhs = key[1]
       local desc = type(key.desc) == "string" and key.desc:lower() or ""
-      if not desc:find("github", 1, true) then
+      if lhs ~= "<leader>gd" and lhs ~= "<leader>gD" and not desc:find("github", 1, true) then
         table.insert(filtered, key)
       end
     end
