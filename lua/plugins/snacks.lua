@@ -12,11 +12,24 @@ return {
         table.insert(filtered, key)
       end
     end
+    table.insert(filtered, {
+      "<leader>e",
+      function()
+        Snacks.explorer({ cwd = LazyVim.root() })
+      end,
+      desc = "File Tree (Root Dir)",
+    })
     return filtered
   end,
   opts = function(_, opts)
     opts.gh = opts.gh or {}
     opts.gh.enabled = false
+    opts.explorer = opts.explorer or {}
+    opts.picker = opts.picker or {}
+    opts.picker.sources = opts.picker.sources or {}
+    opts.picker.sources.explorer = vim.tbl_deep_extend("force", opts.picker.sources.explorer or {}, {
+      layout = { layout = { position = "right" } },
+    })
 
     picker.setup(opts, colors)
 
