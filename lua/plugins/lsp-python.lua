@@ -28,6 +28,21 @@ local function resolve_python_root(bufnr, on_dir)
   end
 end
 
+local function configure_monorepo_python(_, config)
+  if config.root_dir == nil then
+    return
+  end
+
+  local python_path = vim.fs.joinpath(config.root_dir, "sdk", ".venv", "bin", "python")
+  if vim.fn.executable(python_path) ~= 1 then
+    return
+  end
+
+  config.settings = config.settings or {}
+  config.settings.python = config.settings.python or {}
+  config.settings.python.pythonPath = config.settings.python.pythonPath or python_path
+end
+
 return {
   {
     "neovim/nvim-lspconfig",
@@ -46,6 +61,7 @@ return {
       opts.servers.ty = vim.tbl_deep_extend("force", opts.servers.ty or {}, { enabled = false })
       opts.servers.basedpyright = vim.tbl_deep_extend("force", opts.servers.basedpyright or {}, server_options, {
         enabled = true,
+        before_init = configure_monorepo_python,
         settings = {
           basedpyright = {
             disableOrganizeImports = true, -- Ruff handles import organization.
