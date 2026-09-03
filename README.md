@@ -10,7 +10,7 @@
 
 ## Themes
 
-The default is the local `micrographics` colorscheme, which uses pure-invert surfaces, grayscale scaffolding, and canonical success and danger accents for compact state signals. Diffview uses muted background-only add, change, and delete surfaces so source text keeps its normal syntax highlighting. The previous `github_dark_default` theme remains installed as a fallback.
+The default is the local `micrographics` colorscheme, which uses pure-invert surfaces, grayscale scaffolding, and canonical success and danger accents for compact state signals. Diffview keeps the source body identical to a normal file and marks changed lines with narrow add/remove gutters. The previous `github_dark_default` theme remains installed as a fallback.
 
 Use `:set background=light | colorscheme micrographics` for positive polarity, or switch back at any time with `:colorscheme github_dark_default`.
 

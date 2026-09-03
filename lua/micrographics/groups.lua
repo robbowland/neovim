@@ -139,6 +139,8 @@ function M.build(p, options)
     DiffChange = { bg = p.diff_change },
     DiffDelete = { bg = p.diff_delete },
     DiffText = { bg = p.diff_text },
+    DiffTextAdd = { bg = p.diff_text },
+    MicrographicsDiffviewSource = {},
 
     -- Diagnostics: glyph and text carry state; red only escalates ---------------
     DiagnosticError = { fg = p.danger },
