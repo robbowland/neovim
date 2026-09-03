@@ -59,7 +59,10 @@ expect(vim.fn.exists(":DiffviewOpen") == 2, ":DiffviewOpen should be registered"
 expect(vim.fn.exists(":DiffviewFileHistory") == 2, ":DiffviewFileHistory should be registered")
 expect(spec.opts.enhanced_diff_hl == nil, "Diffview should not add body highlighting outside the gutter")
 
-local diff_buf_win_enter = spec.opts.hooks and spec.opts.hooks.diff_buf_win_enter
+local hooks = spec.opts.hooks or {}
+local diff_buf_win_enter = hooks.diff_buf_win_enter
+local view_enter = hooks.view_enter or function() end
+local view_leave = hooks.view_leave or function() end
 expect(type(diff_buf_win_enter) == "function", "Diffview should configure gutter markers for diff windows")
 
 local source_groups = { "DiffAdd", "DiffChange", "DiffDelete", "DiffText", "DiffTextAdd" }
@@ -81,13 +84,21 @@ end
 vim.cmd("tabnew")
 local old_win = vim.api.nvim_get_current_win()
 local old_buf = vim.api.nvim_get_current_buf()
-vim.api.nvim_buf_set_lines(old_buf, 0, -1, false, { "same", "old only", "shared", "changed old", "end" })
+local old_lines = { "same", "old only", "shared", "changed old", "end" }
+for line = 6, 200 do
+  table.insert(old_lines, ("tail %03d"):format(line))
+end
+vim.api.nvim_buf_set_lines(old_buf, 0, -1, false, old_lines)
 vim.cmd("diffthis")
 
 vim.cmd("vnew")
 local new_win = vim.api.nvim_get_current_win()
 local new_buf = vim.api.nvim_get_current_buf()
-vim.api.nvim_buf_set_lines(new_buf, 0, -1, false, { "same", "shared", "changed new", "new only", "end" })
+local new_lines = { "same", "shared", "changed new", "new only", "end" }
+for line = 6, 200 do
+  table.insert(new_lines, ("tail %03d"):format(line))
+end
+vim.api.nvim_buf_set_lines(new_buf, 0, -1, false, new_lines)
 vim.cmd("diffthis")
 vim.cmd("diffupdate")
 
@@ -136,6 +147,40 @@ diff_buf_win_enter(new_buf, new_win, { symbol = "b", layout_name = "diff3_horizo
 local merge_change = render_statuscolumn(new_win, 3)
 expect(has_highlight(merge_change, "Changed"), "merge layouts should use a neutral gutter marker")
 expect_source_window(new_win)
+
+for _, win in ipairs({ old_win, new_win }) do
+  vim.wo[win].foldenable = false
+  vim.api.nvim_win_call(win, function()
+    vim.cmd("normal! ggzt")
+  end)
+end
+vim.cmd("botright 5new")
+local panel_win = vim.api.nvim_get_current_win()
+vim.bo.buftype = "nofile"
+vim.cmd("syncbind")
+view_enter()
+vim.cmd("redraw!")
+local position = vim.api.nvim_win_get_position(new_win)
+vim.api.nvim_input_mouse("move", "", "", 0, position[1] + 5, position[2] + 5)
+expect(vim.fn.getmousepos().winid == new_win, "the mouse fixture should target a source pane from the file panel")
+local wheel_down = vim.api.nvim_replace_termcodes("<ScrollWheelDown>", true, false, true)
+vim.api.nvim_feedkeys(wheel_down:rep(8), "mtx", false)
+expect(
+  vim.wait(1_000, function()
+    return vim.api.nvim_get_current_win() == new_win
+  end, 20),
+  "mouse scrolling from the file panel should focus the hovered Diffview pane"
+)
+local old_scroll = vim.api.nvim_win_call(old_win, vim.fn.winsaveview)
+local new_scroll = vim.api.nvim_win_call(new_win, vim.fn.winsaveview)
+expect(old_scroll.topline > 1 and new_scroll.topline > 1, "the wheel event should scroll both Diffview panes")
+expect(old_scroll.lnum == new_scroll.lnum, "mouse scrolling should keep Diffview source panes aligned")
+
+vim.api.nvim_set_current_win(panel_win)
+view_leave()
+vim.api.nvim_feedkeys(wheel_down, "mtx", false)
+vim.wait(50)
+expect(vim.api.nvim_get_current_win() == panel_win, "leaving Diffview should restore normal mouse behavior")
 vim.cmd("tabclose!")
 
 local test_repo = vim.fn.tempname()

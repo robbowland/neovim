@@ -3,6 +3,11 @@ local marker =
 local line_number = "%=%{v:virtnum == 0 ? (&rnu && v:relnum ? v:relnum : v:lnum) : ''} "
 local statuscolumn = "%C" .. marker .. line_number
 local source_groups = { "DiffAdd", "DiffChange", "DiffDelete", "DiffText", "DiffTextAdd" }
+local mouse_scroll_keycodes = {
+  [vim.api.nvim_replace_termcodes("<ScrollWheelDown>", true, false, true)] = true,
+  [vim.api.nvim_replace_termcodes("<ScrollWheelUp>", true, false, true)] = true,
+}
+local mouse_scroll_namespace = vim.api.nvim_create_namespace("micrographics_diffview_mouse_scroll")
 
 local function gutter_highlight(context)
   if context.layout_name:match("^diff2") then
@@ -29,6 +34,30 @@ local function hide_source_highlights(win)
   vim.wo[win].winhighlight = table.concat(mappings, ",")
 end
 
+-- Neovim ignores scrollbind when the mouse wheel targets an inactive window.
+local function enable_mouse_scroll_sync()
+  vim.on_key(function(key, typed)
+    local input = typed ~= "" and typed or key
+    if not mouse_scroll_keycodes[input] then
+      return
+    end
+
+    local win = vim.fn.getmousepos().winid
+    if
+      win > 0
+      and vim.api.nvim_win_is_valid(win)
+      and win ~= vim.api.nvim_get_current_win()
+      and vim.w[win].micrographics_diffview_gutter_hl
+    then
+      pcall(vim.api.nvim_set_current_win, win)
+    end
+  end, mouse_scroll_namespace)
+end
+
+local function disable_mouse_scroll_sync()
+  vim.on_key(nil, mouse_scroll_namespace)
+end
+
 return {
   "sindrets/diffview.nvim",
   cmd = {
@@ -41,6 +70,8 @@ return {
   },
   opts = {
     hooks = {
+      view_enter = enable_mouse_scroll_sync,
+      view_leave = disable_mouse_scroll_sync,
       diff_buf_win_enter = function(_, win, context)
         vim.w[win].micrographics_diffview_gutter_hl = gutter_highlight(context)
         hide_source_highlights(win)
