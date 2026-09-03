@@ -33,8 +33,9 @@ local snacks_keys = snacks_spec.keys(nil, {
   { "<leader>gD", desc = "Git Diff (origin)" },
   { "<leader>gs", desc = "Git Status" },
 })
-expect(#snacks_keys == 1, "Snacks should not own Diffview mappings")
+expect(#snacks_keys == 2, "Snacks should only add its explorer mapping")
 expect(snacks_keys[1][1] == "<leader>gs", "Snacks should preserve unrelated Git mappings")
+expect(snacks_keys[2][1] == "<leader>e", "Snacks should add the explorer mapping")
 
 vim.wait(1_000, function()
   return vim.fn.exists(":DiffviewOpen") == 2
@@ -53,9 +54,10 @@ expect_foreground("DiffviewStatusModified", "#999999")
 expect_foreground("DiffviewFilePanelDeletions", "#ff3b2f")
 expect_foreground("DiffviewStatusDeleted", "#ff3b2f")
 expect_foreground("DiffviewDiffAdd", "#39d97a")
-if require("diffview.lib").get_current_view() ~= nil then
-  vim.cmd("DiffviewClose")
-end
+local view = require("diffview.lib").get_current_view()
+expect(view ~= nil, "Diffview should open a view")
+expect(view.panel:get_config().position == "right", "Diffview file panel should open on the right")
+vim.cmd("DiffviewClose")
 
 expect_mapping("<leader>gd", "DiffviewOpen HEAD", "Git Diff (Working Tree)")
 expect_mapping(

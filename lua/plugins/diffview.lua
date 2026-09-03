@@ -8,6 +8,11 @@ return {
     "DiffviewRefresh",
     "DiffviewToggleFiles",
   },
+  opts = {
+    file_panel = {
+      win_config = { position = "right" },
+    },
+  },
   keys = {
     { "<leader>gd", "<cmd>DiffviewOpen HEAD<cr>", desc = "Git Diff (Working Tree)" },
     {
