@@ -14,7 +14,7 @@ local function hex(value)
   return tonumber(value:sub(2), 16)
 end
 
-local function expect_highlight(name, expected)
+local function expect_highlight(name, expected, absent)
   local actual = vim.api.nvim_get_hl(0, { name = name, link = false })
   for key, value in pairs(expected) do
     local wanted = (key == "fg" or key == "bg" or key == "sp") and hex(value) or value
@@ -22,6 +22,9 @@ local function expect_highlight(name, expected)
       actual[key] == wanted,
       ("%s.%s: expected %s, got %s"):format(name, key, tostring(wanted), tostring(actual[key]))
     )
+  end
+  for _, key in ipairs(absent or {}) do
+    expect(actual[key] == nil, ("%s.%s: expected no value, got %s"):format(name, key, tostring(actual[key])))
   end
 end
 
@@ -202,7 +205,10 @@ vim.cmd("MicrographicsPunctuation faint")
 expect_highlight("DiagnosticError", { fg = "#ff3b2f" })
 expect_highlight("Added", { fg = "#39d97a" })
 expect_highlight("diffAdded", { fg = "#39d97a" })
-expect_highlight("DiffAdd", { fg = "#39d97a", bg = "#000000" })
+expect_highlight("DiffAdd", { bg = "#102419" }, { "fg" })
+expect_highlight("DiffChange", { bg = "#1c1c1c" }, { "fg" })
+expect_highlight("DiffDelete", { bg = "#2a1514" }, { "fg" })
+expect_highlight("DiffText", { bg = "#333333" }, { "fg", "bold" })
 expect_highlight("OkMsg", { fg = "#39d97a" })
 expect_highlight("DiagnosticOk", { fg = "#39d97a" })
 expect_highlight("DiagnosticVirtualTextOk", { fg = "#39d97a", italic = true })
@@ -259,7 +265,10 @@ expect(require("micrographics").palette("light").success == "#39d97a", "light su
 expect_highlight("Normal", { fg = "#000000", bg = "#ffffff" })
 expect_highlight("Added", { fg = "#39d97a" })
 expect_highlight("diffAdded", { fg = "#39d97a" })
-expect_highlight("DiffAdd", { fg = "#39d97a", bg = "#ffffff" })
+expect_highlight("DiffAdd", { bg = "#e8f3ec" }, { "fg" })
+expect_highlight("DiffChange", { bg = "#eeeeee" }, { "fg" })
+expect_highlight("DiffDelete", { bg = "#f8e9e8" }, { "fg" })
+expect_highlight("DiffText", { bg = "#d8d8d8" }, { "fg", "bold" })
 expect_highlight("Comment", { fg = "#666666", italic = true })
 expect_highlight("@string.documentation", { fg = "#666666", italic = true })
 expect_highlight("Keyword", { fg = "#bfbfbf", italic = true })

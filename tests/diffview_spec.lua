@@ -14,6 +14,13 @@ local function expect_foreground(name, color)
   expect(actual == tonumber(color:sub(2), 16), name .. " should use " .. color)
 end
 
+local function expect_background_only(name, color)
+  local actual = vim.api.nvim_get_hl(0, { name = name, link = false })
+  expect(actual.bg == tonumber(color:sub(2), 16), name .. " should use background " .. color)
+  expect(actual.fg == nil, name .. " should preserve the file's syntax foreground")
+  expect(actual.bold == nil, name .. " should preserve the file's normal text weight")
+end
+
 local function expect_mapping(lhs, command, description)
   local configured
   for _, mapping in ipairs(spec.keys) do
@@ -43,28 +50,31 @@ end)
 
 expect(vim.fn.exists(":DiffviewOpen") == 2, ":DiffviewOpen should be registered")
 expect(vim.fn.exists(":DiffviewFileHistory") == 2, ":DiffviewFileHistory should be registered")
+expect(spec.opts.enhanced_diff_hl == true, "Diffview should subtly render deletion filler")
 
 vim.cmd("DiffviewOpen HEAD")
-expect(vim.wait(1_000, function()
-  return package.loaded["diffview"] ~= nil
-end), "Diffview should load")
+expect(
+  vim.wait(1_000, function()
+    return package.loaded["diffview"] ~= nil
+  end),
+  "Diffview should load"
+)
 expect_foreground("DiffviewFilePanelInsertions", "#39d97a")
 expect_foreground("DiffviewStatusAdded", "#39d97a")
 expect_foreground("DiffviewStatusModified", "#999999")
 expect_foreground("DiffviewFilePanelDeletions", "#ff3b2f")
 expect_foreground("DiffviewStatusDeleted", "#ff3b2f")
-expect_foreground("DiffviewDiffAdd", "#39d97a")
+expect_background_only("DiffviewDiffAdd", "#102419")
+expect_background_only("DiffviewDiffChange", "#1c1c1c")
+expect_background_only("DiffviewDiffText", "#333333")
+expect_background_only("DiffviewDiffAddAsDelete", "#2a1514")
 local view = require("diffview.lib").get_current_view()
 expect(view ~= nil, "Diffview should open a view")
 expect(view.panel:get_config().position == "right", "Diffview file panel should open on the right")
 vim.cmd("DiffviewClose")
 
 expect_mapping("<leader>gd", "DiffviewOpen HEAD", "Git Diff (Working Tree)")
-expect_mapping(
-  "<leader>gD",
-  "DiffviewOpen origin/HEAD...HEAD --imply-local",
-  "Git Diff (Full Branch)"
-)
+expect_mapping("<leader>gD", "DiffviewOpen origin/HEAD...HEAD --imply-local", "Git Diff (Full Branch)")
 expect_mapping("<leader>gq", "DiffviewClose", "Close Diffview")
 expect_mapping("<leader>gF", "DiffviewFileHistory %", "Git Current File History (Diffview)")
 expect_mapping("<leader>gH", "DiffviewFileHistory", "Git History (Diffview)")

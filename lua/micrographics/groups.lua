@@ -135,10 +135,10 @@ function M.build(p, options)
     Added = { fg = p.success },
     Changed = { fg = p.metadata },
     Removed = { fg = p.danger },
-    DiffAdd = { fg = p.success, bg = p.paper },
-    DiffChange = { fg = p.metadata, bg = p.paper },
-    DiffDelete = { fg = p.danger, bg = p.paper },
-    DiffText = { fg = p.paper, bg = p.ink, bold = true },
+    DiffAdd = { bg = p.diff_add },
+    DiffChange = { bg = p.diff_change },
+    DiffDelete = { bg = p.diff_delete },
+    DiffText = { bg = p.diff_text },
 
     -- Diagnostics: glyph and text carry state; red only escalates ---------------
     DiagnosticError = { fg = p.danger },

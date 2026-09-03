@@ -9,6 +9,7 @@ return {
     "DiffviewToggleFiles",
   },
   opts = {
+    enhanced_diff_hl = true,
     file_panel = {
       win_config = { position = "right" },
     },
