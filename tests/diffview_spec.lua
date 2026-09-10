@@ -28,18 +28,34 @@ local function expect_unstyled(name)
   end
 end
 
-local function expect_mapping(lhs, command, description)
-  local configured
+local function configured_mapping(lhs)
   for _, mapping in ipairs(spec.keys) do
     if mapping[1] == lhs then
-      configured = mapping
-      break
+      return mapping
     end
   end
+end
 
+local function expect_command_mapping(lhs, command, description)
+  local configured = configured_mapping(lhs)
   expect(configured ~= nil, lhs .. " should be mapped")
   expect(configured[2] == "<cmd>" .. command .. "<cr>", lhs .. " should run " .. command)
   expect(configured.desc == description, lhs .. " should be described as " .. description)
+end
+
+local function expect_function_mapping(lhs, description)
+  local configured = configured_mapping(lhs)
+  expect(configured ~= nil, lhs .. " should be mapped")
+  expect(type(configured[2]) == "function", lhs .. " should run a Lua function")
+  expect(configured.desc == description, lhs .. " should be described as " .. description)
+end
+
+local function configured_diffview_mapping(options, section, lhs)
+  for _, mapping in ipairs(options.keymaps[section]) do
+    if mapping[2] == lhs then
+      return mapping
+    end
+  end
 end
 
 local snacks_keys = snacks_spec.keys(nil, {
@@ -57,13 +73,18 @@ end)
 
 expect(vim.fn.exists(":DiffviewOpen") == 2, ":DiffviewOpen should be registered")
 expect(vim.fn.exists(":DiffviewFileHistory") == 2, ":DiffviewFileHistory should be registered")
-expect(spec.opts.enhanced_diff_hl == nil, "Diffview should not add body highlighting outside the gutter")
+expect(vim.fn.exists(":DiffviewPR") == 2, ":DiffviewPR should be registered")
 
-local hooks = spec.opts.hooks or {}
+local options = type(spec.opts) == "function" and spec.opts() or spec.opts
+expect(options.enhanced_diff_hl == nil, "Diffview should not add body highlighting outside the gutter")
+
+local hooks = options.hooks or {}
+local diff_buf_read = hooks.diff_buf_read
 local diff_buf_win_enter = hooks.diff_buf_win_enter
 local view_enter = hooks.view_enter or function() end
 local view_leave = hooks.view_leave or function() end
-expect(type(diff_buf_win_enter) == "function", "Diffview should configure gutter markers for diff windows")
+expect(type(diff_buf_read) == "function", "Diffview should tune large diff buffers")
+expect(type(diff_buf_win_enter) == "function", "Diffview should configure diff windows")
 
 local source_groups = { "DiffAdd", "DiffChange", "DiffDelete", "DiffText", "DiffTextAdd" }
 local function expect_source_window(win)
@@ -106,6 +127,11 @@ diff_buf_win_enter(old_buf, old_win, { symbol = "a", layout_name = "diff2_horizo
 diff_buf_win_enter(new_buf, new_win, { symbol = "b", layout_name = "diff2_horizontal" })
 expect_source_window(old_win)
 expect_source_window(new_win)
+for _, win in ipairs({ old_win, new_win }) do
+  expect(not vim.wo[win].wrap, "Diffview source windows should not wrap")
+  expect(not vim.wo[win].list, "Diffview source windows should hide list characters")
+  expect(vim.wo[win].colorcolumn == "80", "Diffview source windows should mark column 80")
+end
 
 local function render_statuscolumn(win, line)
   return vim.api.nvim_eval_statusline(vim.wo[win].statuscolumn, {
@@ -183,6 +209,22 @@ vim.wait(50)
 expect(vim.api.nvim_get_current_win() == panel_win, "leaving Diffview should restore normal mouse behavior")
 vim.cmd("tabclose!")
 
+local large_buffer = vim.api.nvim_create_buf(false, true)
+local large_lines = {}
+for line = 1, 10000 do
+  large_lines[line] = ("large diff line %d"):format(line)
+end
+vim.api.nvim_buf_set_lines(large_buffer, 0, -1, false, large_lines)
+diff_buf_read(large_buffer)
+expect(vim.b[large_buffer].diffview_large_buffer == true, "large diff buffers should be marked")
+expect(vim.b[large_buffer].completion == false, "large diff buffers should disable completion")
+vim.cmd("new")
+vim.api.nvim_win_set_buf(0, large_buffer)
+local large_window = vim.api.nvim_get_current_win()
+diff_buf_win_enter(large_buffer, large_window, { symbol = "b", layout_name = "diff2_horizontal" })
+expect(vim.wo[large_window].foldmethod == "manual", "large diff windows should use manual folds")
+vim.cmd("bwipeout!")
+
 local test_repo = vim.fn.tempname()
 vim.fn.mkdir(test_repo, "p")
 local function git(arguments)
@@ -199,11 +241,47 @@ local test_file = test_repo .. "/example.lua"
 vim.fn.writefile({ "return { old = true }" }, test_file)
 git({ "add", "example.lua" })
 git({ "commit", "--quiet", "-m", "Initial" })
-vim.fn.writefile({ "return { new = true }" }, test_file)
+git({ "branch", "-M", "main" })
+git({ "update-ref", "refs/remotes/origin/main", "HEAD" })
+git({ "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main" })
+git({ "switch", "--quiet", "-c", "feature" })
+vim.fn.writefile({ "return { branch = true }" }, test_file)
+git({ "add", "example.lua" })
+git({ "commit", "--quiet", "-m", "Branch change" })
+vim.fn.writefile(
+  { "<<<<<<< HEAD", "return { branch = true }", "=======", "return { local_change = true }", ">>>>>>> working" },
+  test_file
+)
+
+local stage_mapping = configured_diffview_mapping(options, "file_panel", "-")
+local prompted = false
+local original_confirm = vim.fn.confirm
+local diffview_lib = require("diffview.lib")
+local original_get_current_view = diffview_lib.get_current_view
+vim.fn.confirm = function()
+  prompted = true
+  return 1
+end
+diffview_lib.get_current_view = function()
+  return {
+    infer_cur_file = function()
+      return { kind = "working", path = "example.lua", absolute_path = test_file }
+    end,
+  }
+end
+local guarded, guard_error = pcall(stage_mapping[3])
+vim.fn.confirm = original_confirm
+diffview_lib.get_current_view = original_get_current_view
+expect(guarded, "the staging guard should run: " .. tostring(guard_error))
+expect(prompted, "the staging guard should warn about unresolved conflict markers")
+local staged = vim.system({ "git", "-C", test_repo, "diff", "--cached", "--name-only" }, { text = true }):wait()
+expect(staged.code == 0 and vim.trim(staged.stdout or "") == "", "cancelled staging should leave the index unchanged")
 
 local original_cwd = vim.fn.getcwd()
+vim.cmd("enew")
 vim.cmd("lcd " .. vim.fn.fnameescape(test_repo))
-vim.cmd("DiffviewOpen HEAD")
+local diffview = require("config.diffview")
+diffview.open_all_changes()
 expect(
   vim.wait(5_000, function()
     for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
@@ -228,6 +306,7 @@ expect_unstyled("MicrographicsDiffviewSource")
 
 local view = require("diffview.lib").get_current_view()
 expect(view ~= nil, "Diffview should open a view")
+expect(vim.t.diffview_context == "feature", "full-branch diffs should identify their branch")
 expect(view.panel:get_config().position == "right", "Diffview file panel should open on the right")
 local source_windows = 0
 local source_sides = {}
@@ -251,14 +330,49 @@ if local_buffer and package.loaded.gitsigns then
   end, 50)
   require("gitsigns").detach(local_buffer)
 end
+
+vim.cmd("DiffviewClose")
+diffview.open_all_changes_history()
+expect(
+  vim.wait(5_000, function()
+    local history_view = require("diffview.lib").get_current_view()
+    local panel = history_view and history_view.panel
+    return panel and panel.updating == false and type(panel.entries) == "table" and #panel.entries > 0
+  end, 50),
+  "Diffview should load full-branch history"
+)
+expect(vim.t.diffview_context == "feature", "full-branch history should identify its branch")
 vim.cmd("DiffviewClose")
 vim.cmd("lcd " .. vim.fn.fnameescape(original_cwd))
 vim.fn.delete(test_repo, "rf")
 
-expect_mapping("<leader>gd", "DiffviewOpen HEAD", "Git Diff (Working Tree)")
-expect_mapping("<leader>gD", "DiffviewOpen origin/HEAD...HEAD --imply-local", "Git Diff (Full Branch)")
-expect_mapping("<leader>gq", "DiffviewClose", "Close Diffview")
-expect_mapping("<leader>gF", "DiffviewFileHistory %", "Git Current File History (Diffview)")
-expect_mapping("<leader>gH", "DiffviewFileHistory", "Git History (Diffview)")
+expect_command_mapping("<leader>gd", "DiffviewOpen", "Git Diff (Working Tree)")
+expect_function_mapping("<leader>gD", "Git Diff (Full Branch)")
+expect_function_mapping("<leader>gA", "Git Diff (Full Branch by Commit)")
+expect_function_mapping("<leader>gV", "Git Diff (Current PR Layer)")
+expect_command_mapping("<leader>gq", "DiffviewClose", "Close Diffview")
+expect_command_mapping("<leader>gF", "DiffviewFileHistory --base=LOCAL %", "Git Current File History (Diffview)")
+expect_command_mapping(
+  "<leader>gR",
+  "DiffviewFileHistory --follow --base=LOCAL %",
+  "Git Current File History (Follow Renames)"
+)
+expect_command_mapping("<leader>gH", "DiffviewFileHistory", "Git History (Diffview)")
+expect_command_mapping("<leader>gm", "DiffviewOpen HEAD~1", "Git Diff (Last Commit to Working Tree)")
+expect_command_mapping("<leader>gM", "DiffviewOpen HEAD~1..HEAD", "Git Diff (Last Commit)")
+expect(configured_mapping("<leader>gf") == nil, "Diffview should preserve LazyVim's file-history picker")
+
+for _, lhs in ipairs({ "-", "s", "S", "<leader>cw" }) do
+  local mapping = configured_diffview_mapping(options, "file_panel", lhs)
+  expect(mapping ~= nil and type(mapping[3]) == "function", lhs .. " should use a guarded Diffview action")
+end
+local merge_mapping = configured_diffview_mapping(options, "view", "<leader>cw")
+expect(merge_mapping ~= nil and type(merge_mapping[3]) == "function", "Diffview views should save resolved merge files")
+
+vim.t.diffview_context = nil
+expect(not diffview.has_statusline_context(), "ordinary tabs should not show Diffview context")
+vim.t.diffview_context = "feature  PR #42"
+expect(diffview.statusline() == "feature  PR #42", "Diffview context should include the branch and pull request")
+vim.t.diffview_context = nil
 
 print(("diffview: %d checks passed"):format(checks))

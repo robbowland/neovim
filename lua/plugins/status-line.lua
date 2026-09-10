@@ -1,4 +1,5 @@
 local colors = require("config.colors")
+local diffview = require("config.diffview")
 
 local theme = {
   normal = {
@@ -45,7 +46,19 @@ return {
             lualine_b = {},
             lualine_c = {},
             lualine_x = {},
-            lualine_y = { "branch", "diff" },
+            lualine_y = {
+              {
+                diffview.statusline,
+                cond = diffview.has_statusline_context,
+              },
+              {
+                "branch",
+                cond = function()
+                  return not diffview.has_statusline_context()
+                end,
+              },
+              "diff",
+            },
             lualine_z = {
               {
                 "mode",
