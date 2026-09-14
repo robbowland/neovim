@@ -141,6 +141,8 @@ function M.build(p, options)
     DiffText = { bg = p.diff_text },
     DiffTextAdd = { bg = p.diff_text },
     MicrographicsDiffviewSource = {},
+    MicrographicsDiffviewFold = { fg = p.metadata, bg = p.diff_change, bold = true },
+    MicrographicsDiffviewFoldColumn = { fg = p.metadata, bg = p.diff_change, bold = true },
 
     -- Diagnostics: glyph and text carry state; red only escalates ---------------
     DiagnosticError = { fg = p.danger },

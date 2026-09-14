@@ -33,7 +33,7 @@ Diffview owns the side-by-side review mappings while LazyVim keeps `<leader>gf` 
 | `<leader>gM` | Previous commit against `HEAD` |
 | `<leader>gq` | Close Diffview |
 
-PR-layer diffs and PR numbers in the status line require an authenticated GitHub CLI. In the file panel, `-` or `s` toggles staging and `S` stages everything; unresolved conflict markers require confirmation. `<leader>cw` saves the resolved merge file. Large diff buffers disable expensive editor services, while the existing right-hand file panel and Micrographics gutter-only highlighting remain unchanged.
+PR-layer diffs and PR numbers in the status line require an authenticated GitHub CLI. In the file panel, `-` or `s` toggles staging and `S` stages everything; unresolved conflict markers require confirmation. `<leader>cw` saves the resolved merge file. Closed unchanged sections appear as full-width labelled dividers showing the hidden count and file-line range; `zO` expands one, `zR` expands all, and `zM` collapses all. Large diff buffers disable expensive editor services, while the existing right-hand file panel and Micrographics gutter-only change highlighting remain unchanged.
 
 <p align="center">
   <a>sections</a> •

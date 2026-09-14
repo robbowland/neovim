@@ -2,6 +2,9 @@ local marker =
   [[%{%v:virtnum == 0 && diff_hlID(v:lnum, 1) ? '%#' . w:micrographics_diffview_gutter_hl . '#▎%*' : ' '%}]]
 local line_number = "%=%{v:virtnum == 0 ? (&rnu && v:relnum ? v:relnum : v:lnum) : ''} "
 local statuscolumn = "%C" .. marker .. line_number
+local foldtext =
+  [["  " . (v:foldend - v:foldstart + 1) . " unchanged lines hidden · file lines " . v:foldstart . "–" . v:foldend . " · zO expand · zR expand all  "]]
+local fold_fillchars = { fold = "─", foldclose = "▶", foldopen = "▼", foldsep = "│" }
 local source_groups = { "DiffAdd", "DiffChange", "DiffDelete", "DiffText", "DiffTextAdd" }
 local mouse_scroll_keycodes = {
   [vim.api.nvim_replace_termcodes("<ScrollWheelDown>", true, false, true)] = true,
@@ -41,6 +44,11 @@ local function tune_diff_window(bufnr, win)
   vim.wo[win].wrap = false
   vim.wo[win].list = false
   vim.wo[win].colorcolumn = "80"
+  vim.wo[win].foldcolumn = "1"
+  vim.wo[win].foldtext = foldtext
+  vim.api.nvim_win_call(win, function()
+    vim.opt_local.fillchars:append(fold_fillchars)
+  end)
 
   if vim.b[bufnr].diffview_large_buffer then
     vim.wo[win].foldmethod = "manual"
@@ -55,7 +63,7 @@ local function gutter_highlight(context)
 end
 
 local function hide_source_highlights(win)
-  local hidden = {}
+  local hidden = { FoldColumn = true, Folded = true }
   for _, group in ipairs(source_groups) do
     hidden[group] = true
   end
@@ -69,7 +77,19 @@ local function hide_source_highlights(win)
   for _, group in ipairs(source_groups) do
     table.insert(mappings, group .. ":MicrographicsDiffviewSource")
   end
+  table.insert(mappings, "FoldColumn:MicrographicsDiffviewFoldColumn")
+  table.insert(mappings, "Folded:MicrographicsDiffviewFold")
   vim.wo[win].winhighlight = table.concat(mappings, ",")
+end
+
+local function compatible_fold_action(actions, lhs)
+  for _, mapping in ipairs(actions.compat.fold_cmds) do
+    if mapping[2] == lhs then
+      return mapping[3]
+    end
+  end
+
+  error("Diffview fold action is unavailable: " .. lhs)
 end
 
 -- Neovim ignores scrollbind when the mouse wheel targets an inactive window.
@@ -273,6 +293,8 @@ return {
   end,
   opts = function()
     local actions = require("diffview.actions")
+    local expand_all_folds = compatible_fold_action(actions, "zR")
+    local collapse_all_folds = compatible_fold_action(actions, "zM")
 
     vim.api.nvim_create_autocmd("LspAttach", {
       group = vim.api.nvim_create_augroup("diffview_large_buffer_lsp", { clear = true }),
@@ -307,6 +329,8 @@ return {
       },
       keymaps = {
         view = {
+          { "n", "zR", expand_all_folds, { desc = "Expand all unchanged sections" } },
+          { "n", "zM", collapse_all_folds, { desc = "Collapse all unchanged sections" } },
           { "n", "<leader>cw", write_merge_file, { desc = "Save resolved merge file" } },
         },
         file_panel = {

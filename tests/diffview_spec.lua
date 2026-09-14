@@ -94,7 +94,23 @@ local function expect_source_window(win)
   local _, virtual_guards = statuscolumn:gsub("v:virtnum == 0", "")
   expect(virtual_guards == 2, "markers and line numbers should both be hidden on virtual rows")
 
+  expect(vim.wo[win].foldcolumn == "1", "Diffview should reserve a visible fold column")
+  expect(
+    vim.wo[win].foldtext:find("unchanged lines hidden", 1, true) ~= nil,
+    "closed Diffview folds should say that unchanged lines are hidden"
+  )
+  for _, fillchar in ipairs({ "fold:─", "foldclose:▶", "foldopen:▼", "foldsep:│" }) do
+    expect(vim.wo[win].fillchars:find(fillchar, 1, true) ~= nil, "Diffview should use the visible " .. fillchar)
+  end
+
   local winhighlight = vim.wo[win].winhighlight
+  for _, mapping in ipairs({
+    "FoldColumn:MicrographicsDiffviewFoldColumn",
+    "Folded:MicrographicsDiffviewFold",
+  }) do
+    local _, mappings = winhighlight:gsub(mapping, "")
+    expect(mappings == 1, mapping .. " should be installed exactly once")
+  end
   for _, group in ipairs(source_groups) do
     local mapping = group .. ":MicrographicsDiffviewSource"
     local _, mappings = winhighlight:gsub(mapping, "")
@@ -173,6 +189,27 @@ diff_buf_win_enter(new_buf, new_win, { symbol = "b", layout_name = "diff3_horizo
 local merge_change = render_statuscolumn(new_win, 3)
 expect(has_highlight(merge_change, "Changed"), "merge layouts should use a neutral gutter marker")
 expect_source_window(new_win)
+
+vim.api.nvim_set_current_win(new_win)
+local collapse_all_folds = configured_diffview_mapping(options, "view", "zM")
+local expand_all_folds = configured_diffview_mapping(options, "view", "zR")
+expect(
+  collapse_all_folds ~= nil and type(collapse_all_folds[3]) == "function",
+  "zM should collapse all unchanged sections"
+)
+expect(expand_all_folds ~= nil and type(expand_all_folds[3]) == "function", "zR should expand all unchanged sections")
+collapse_all_folds[3]()
+local fold_start = vim.fn.foldclosed(100)
+local fold_end = vim.fn.foldclosedend(100)
+expect(fold_start > 0 and fold_end >= fold_start, "zM should close unchanged sections")
+local rendered_fold = vim.fn.foldtextresult(fold_start)
+expect(rendered_fold:find("unchanged lines hidden", 1, true) ~= nil, "fold text should identify hidden unchanged lines")
+expect(
+  rendered_fold:find(("file lines %d–%d"):format(fold_start, fold_end), 1, true) ~= nil,
+  "fold text should identify the hidden file-line range"
+)
+expand_all_folds[3]()
+expect(vim.fn.foldclosed(100) == -1, "zR should expand unchanged sections")
 
 for _, win in ipairs({ old_win, new_win }) do
   vim.wo[win].foldenable = false
@@ -368,6 +405,13 @@ for _, lhs in ipairs({ "-", "s", "S", "<leader>cw" }) do
 end
 local merge_mapping = configured_diffview_mapping(options, "view", "<leader>cw")
 expect(merge_mapping ~= nil and type(merge_mapping[3]) == "function", "Diffview views should save resolved merge files")
+for _, fold_mapping in ipairs({
+  { lhs = "zR", description = "Expand all unchanged sections" },
+  { lhs = "zM", description = "Collapse all unchanged sections" },
+}) do
+  local mapping = configured_diffview_mapping(options, "view", fold_mapping.lhs)
+  expect(mapping ~= nil and mapping[4].desc == fold_mapping.description, fold_mapping.lhs .. " should be discoverable")
+end
 
 vim.t.diffview_context = nil
 expect(not diffview.has_statusline_context(), "ordinary tabs should not show Diffview context")
