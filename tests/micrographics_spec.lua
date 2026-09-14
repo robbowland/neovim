@@ -39,6 +39,8 @@ local standard_captures = {
   "@constant.macro",
   "@module",
   "@module.builtin",
+  "@namespace",
+  "@namespace.builtin",
   "@label",
   "@string",
   "@string.documentation",
@@ -129,7 +131,8 @@ local function expect_tree_sitter_coverage()
     expect(groups[capture] ~= nil, capture .. " should be defined by Micrographics")
   end
 
-  local ignored_captures = { spell = true, nospell = true }
+  -- R.nvim co-captures these query selectors with the semantic group that owns their appearance.
+  local ignored_captures = { ["class.outer"] = true, content = true, spell = true, nospell = true }
   local languages = {}
   for _, parser_path in ipairs(vim.api.nvim_get_runtime_file("parser/*.so", true)) do
     languages[vim.fs.basename(parser_path):gsub("%.so$", "")] = true
@@ -190,6 +193,8 @@ expect_highlight("Keyword", { fg = "#616161", italic = true })
 expect_highlight("Type", { fg = "#ffffff" })
 expect_highlight("Function", { fg = "#ffffff", bold = true })
 expect_highlight("@variable.builtin", { fg = "#ffffff" })
+expect_highlight("@namespace.builtin", { fg = "#ffffff" })
+expect_highlight("@keyword.storage.lifetime.punctuation", { fg = "#616161" })
 expect_highlight("@lsp.mod.defaultLibrary", { fg = "#ffffff" })
 expect_highlight("LspInlayHint", { fg = "#616161", bg = "#000000" })
 expect_highlight("@punctuation.bracket", { fg = "#616161" })
@@ -283,6 +288,8 @@ expect_highlight("@string.documentation", { fg = "#666666", italic = true })
 expect_highlight("Keyword", { fg = "#9e9e9e", italic = true })
 expect_highlight("Type", { fg = "#000000" })
 expect_highlight("@variable.builtin", { fg = "#000000" })
+expect_highlight("@namespace.builtin", { fg = "#000000" })
+expect_highlight("@keyword.storage.lifetime.punctuation", { fg = "#9e9e9e" })
 expect_highlight("@lsp.mod.defaultLibrary", { fg = "#000000" })
 expect_highlight("LspInlayHint", { fg = "#9e9e9e", bg = "#ffffff" })
 expect_highlight("DiagnosticError", { fg = "#c81e1e" })

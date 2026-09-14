@@ -203,7 +203,7 @@ function M.build(p, options)
     "Function"
   )
   link_many(groups, { "@function.builtin", "@constructor" }, "Function")
-  link_many(groups, { "@module", "@module.builtin", "@namespace" }, "Type")
+  link_many(groups, { "@module", "@module.builtin", "@namespace", "@namespace.builtin" }, "Type")
   link_many(
     groups,
     { "@type", "@type.builtin", "@type.definition", "@type.qualifier", "@attribute", "@attribute.builtin" },
@@ -229,7 +229,11 @@ function M.build(p, options)
     "@keyword.directive.define",
   }, "Conditional")
   link_many(groups, { "@operator" }, "Operator")
-  link_many(groups, { "@punctuation.delimiter", "@punctuation.special" }, "Delimiter")
+  link_many(
+    groups,
+    { "@punctuation.delimiter", "@punctuation.special", "@keyword.storage.lifetime.punctuation" },
+    "Delimiter"
+  )
   groups["@punctuation.bracket"] = { fg = punctuation }
   groups["@micrographics.punctuation"] = { fg = punctuation }
   link_many(groups, { "@tag", "@tag.builtin" }, "Tag")
