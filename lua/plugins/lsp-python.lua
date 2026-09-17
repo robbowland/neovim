@@ -28,19 +28,37 @@ local function resolve_python_root(bufnr, on_dir)
   end
 end
 
-local function configure_monorepo_python(_, config)
-  if config.root_dir == nil then
-    return
+local function project_venv_executable(root_dir, name)
+  if root_dir == nil then
+    return nil
   end
 
-  local python_path = vim.fs.joinpath(config.root_dir, "sdk", ".venv", "bin", "python")
-  if vim.fn.executable(python_path) ~= 1 then
+  local executable = vim.fs.joinpath(root_dir, ".venv", "bin", name)
+  if vim.fn.executable(executable) == 1 then
+    return executable
+  end
+end
+
+local function configure_project_python(_, config)
+  local python_path = project_venv_executable(config.root_dir, "python")
+  if python_path == nil then
     return
   end
 
   config.settings = config.settings or {}
   config.settings.python = config.settings.python or {}
   config.settings.python.pythonPath = config.settings.python.pythonPath or python_path
+end
+
+local function project_command(name, arguments)
+  return function(dispatchers, config)
+    local command = project_venv_executable(config.root_dir, name) or name
+    return vim.lsp.rpc.start(vim.list_extend({ command }, arguments), dispatchers, {
+      cwd = config.cmd_cwd,
+      env = config.cmd_env,
+      detached = config.detached,
+    })
+  end
 end
 
 return {
@@ -61,14 +79,18 @@ return {
       opts.servers.ty = vim.tbl_deep_extend("force", opts.servers.ty or {}, { enabled = false })
       opts.servers.basedpyright = vim.tbl_deep_extend("force", opts.servers.basedpyright or {}, server_options, {
         enabled = true,
-        before_init = configure_monorepo_python,
+        before_init = configure_project_python,
+        cmd = project_command("basedpyright-langserver", { "--stdio" }),
         settings = {
           basedpyright = {
             disableOrganizeImports = true, -- Ruff handles import organization.
           },
         },
       })
-      opts.servers.ruff = vim.tbl_deep_extend("force", opts.servers.ruff or {}, server_options, { enabled = true })
+      opts.servers.ruff = vim.tbl_deep_extend("force", opts.servers.ruff or {}, server_options, {
+        enabled = true,
+        cmd = project_command("ruff", { "server" }),
+      })
     end,
   },
 }
