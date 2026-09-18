@@ -15,6 +15,34 @@ local large_diff_line_limit = 10000
 local file_panel_compact_width = 35
 local file_panel_min_editor_width = 20
 
+local function place_newer_pane_on_left(view)
+  local layout = view and view.cur_layout
+  if not (layout and type(layout.windows) == "table" and #layout.windows == 2 and layout.a and layout.b) then
+    return
+  end
+
+  local old_win = layout.a.id
+  local new_win = layout.b.id
+  if not old_win or not new_win or not vim.api.nvim_win_is_valid(old_win) or not vim.api.nvim_win_is_valid(new_win) then
+    return
+  end
+
+  local old_position = vim.api.nvim_win_get_position(old_win)
+  local new_position = vim.api.nvim_win_get_position(new_win)
+  if old_position[1] ~= new_position[1] or old_position[2] >= new_position[2] then
+    return
+  end
+
+  local old_winnr = vim.fn.win_id2win(old_win)
+  if old_winnr == 0 then
+    return
+  end
+
+  vim.api.nvim_win_call(new_win, function()
+    vim.cmd(("%dwincmd x"):format(old_winnr))
+  end)
+end
+
 local function refresh_statusline()
   if package.loaded.lualine then
     pcall(require("lualine").refresh, { place = { "statusline" } })
@@ -439,9 +467,11 @@ return {
       hooks = {
         view_opened = function(view)
           hide_tabline()
+          place_newer_pane_on_left(view)
           configure_adaptive_file_panel(view)
         end,
         view_enter = function(view)
+          place_newer_pane_on_left(view)
           enable_mouse_scroll_sync()
           resize_file_panel(view, view and view.panel and view.panel:is_focused())
           refresh_statusline()
@@ -456,6 +486,7 @@ return {
           refresh_statusline()
         end,
         view_post_layout = function(view)
+          place_newer_pane_on_left(view)
           vim.schedule(function()
             resize_file_panel(view, view and view.panel and view.panel:is_focused())
           end)
@@ -467,6 +498,9 @@ return {
           vim.w[win].micrographics_diffview_gutter_hl = gutter_highlight(context)
           hide_source_highlights(win)
           vim.wo[win].statuscolumn = statuscolumn
+          if context.layout_name == "diff2_horizontal" and context.symbol == "b" then
+            place_newer_pane_on_left(require("diffview.lib").get_current_view())
+          end
         end,
       },
       file_panel = {
@@ -484,6 +518,7 @@ return {
           { "n", "-", guarded_toggle_stage_entry(actions), { desc = "Stage / unstage the selected entry" } },
           { "n", "s", guarded_toggle_stage_entry(actions), { desc = "Stage / unstage the selected entry" } },
           { "n", "S", guarded_stage_all(actions), { desc = "Stage all entries" } },
+          { "n", "X", actions.restore_entry, { desc = "Restore entry to the older state" } },
           { "n", "<leader>cw", write_merge_file, { desc = "Save resolved merge file" } },
         },
         file_history_panel = {

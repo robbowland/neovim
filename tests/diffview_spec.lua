@@ -405,12 +405,15 @@ expect(rendered_statusline:find("-1", 1, true) ~= nil, "the footer should render
 local source_windows = 0
 local source_window
 local source_sides = {}
+local source_columns = {}
 local local_buffer
 for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
   if vim.wo[win].diff then
     source_windows = source_windows + 1
     source_window = source_window or win
-    source_sides[vim.w[win].micrographics_diffview_gutter_hl] = true
+    local side = vim.w[win].micrographics_diffview_gutter_hl
+    source_sides[side] = true
+    source_columns[side] = vim.api.nvim_win_get_position(win)[2]
     expect_source_window(win)
     local buffer = vim.api.nvim_win_get_buf(win)
     if vim.bo[buffer].buftype == "" and vim.endswith(vim.api.nvim_buf_get_name(buffer), "/example.lua") then
@@ -420,6 +423,7 @@ for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
 end
 expect(source_windows == 2, "Diffview should install the gutter in both source panes")
 expect(source_sides.Removed and source_sides.Added, "Diffview should identify its old and new panes")
+expect(source_columns.Added < source_columns.Removed, "Diffview should place the newer state on the left")
 vim.api.nvim_set_current_win(source_window)
 expect(
   vim.wait(1_000, function()
@@ -526,6 +530,11 @@ for _, lhs in ipairs({ "-", "s", "S", "<leader>cw" }) do
   local mapping = configured_diffview_mapping(options, "file_panel", lhs)
   expect(mapping ~= nil and type(mapping[3]) == "function", lhs .. " should use a guarded Diffview action")
 end
+local restore_mapping = configured_diffview_mapping(options, "file_panel", "X")
+expect(
+  restore_mapping ~= nil and restore_mapping[4].desc == "Restore entry to the older state",
+  "X should describe restoration independently of pane position"
+)
 local merge_mapping = configured_diffview_mapping(options, "view", "<leader>cw")
 expect(merge_mapping ~= nil and type(merge_mapping[3]) == "function", "Diffview views should save resolved merge files")
 for _, fold_mapping in ipairs({
