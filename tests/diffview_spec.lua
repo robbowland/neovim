@@ -83,8 +83,11 @@ local diff_buf_read = hooks.diff_buf_read
 local diff_buf_win_enter = hooks.diff_buf_win_enter
 local view_enter = hooks.view_enter or function() end
 local view_leave = hooks.view_leave or function() end
+expect(type(hooks.view_opened) == "function", "Diffview should configure its adaptive file panel")
+expect(type(hooks.view_post_layout) == "function", "Diffview should preserve adaptive sizing after layout changes")
 expect(type(diff_buf_read) == "function", "Diffview should tune large diff buffers")
 expect(type(diff_buf_win_enter) == "function", "Diffview should configure diff windows")
+expect(options.file_panel.win_config.width == 35, "Diffview should use a compact 35-column file panel")
 
 local source_groups = { "DiffAdd", "DiffChange", "DiffDelete", "DiffText", "DiffTextAdd" }
 local function expect_source_window(win)
@@ -275,15 +278,20 @@ git({ "init", "--quiet" })
 git({ "config", "user.name", "Diffview Spec" })
 git({ "config", "user.email", "diffview-spec@example.com" })
 local test_file = test_repo .. "/example.lua"
+local long_relative_path = "src/components/diffview-panel-entry.lua"
+local long_file = test_repo .. "/" .. long_relative_path
+vim.fn.mkdir(vim.fs.dirname(long_file), "p")
 vim.fn.writefile({ "return { old = true }" }, test_file)
-git({ "add", "example.lua" })
+vim.fn.writefile({ "return { old = true }" }, long_file)
+git({ "add", "example.lua", long_relative_path })
 git({ "commit", "--quiet", "-m", "Initial" })
 git({ "branch", "-M", "main" })
 git({ "update-ref", "refs/remotes/origin/main", "HEAD" })
 git({ "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main" })
 git({ "switch", "--quiet", "-c", "feature" })
 vim.fn.writefile({ "return { branch = true }" }, test_file)
-git({ "add", "example.lua" })
+vim.fn.writefile({ "return { branch = true }" }, long_file)
+git({ "add", "example.lua", long_relative_path })
 git({ "commit", "--quiet", "-m", "Branch change" })
 vim.fn.writefile(
   { "<<<<<<< HEAD", "return { branch = true }", "=======", "return { local_change = true }", ">>>>>>> working" },
@@ -349,12 +357,59 @@ local view = require("diffview.lib").get_current_view()
 expect(view ~= nil, "Diffview should open a view")
 expect(vim.t.diffview_context == "feature", "full-branch diffs should identify their branch")
 expect(view.panel:get_config().position == "right", "Diffview file panel should open on the right")
+expect(
+  vim.wait(1_000, function()
+    return (view.panel:get_width() or 0) > options.file_panel.win_config.width
+  end, 20),
+  "the focused Diffview file panel should expand to fit long entries"
+)
+local expanded_panel_width = view.panel:get_width()
+local long_panel_line
+for _, line in ipairs(vim.api.nvim_buf_get_lines(view.panel.bufid, 0, -1, false)) do
+  if line:find(vim.fs.basename(long_relative_path), 1, true) then
+    long_panel_line = line
+    break
+  end
+end
+expect(long_panel_line ~= nil, "the long file should be rendered in the Diffview panel")
+expect(
+  vim.fn.strdisplaywidth(long_panel_line) + 2 <= expanded_panel_width,
+  "the expanded Diffview panel should fit the complete file entry"
+)
+
+local long_file_opened = false
+view.emitter:once("file_open_post", function(_, file)
+  if file.path == long_relative_path then
+    long_file_opened = true
+  end
+end)
+view:set_file_by_path(long_relative_path, false, true)
+expect(
+  vim.wait(1_000, function()
+    return long_file_opened
+  end, 20),
+  "Diffview should open the selected long file"
+)
+expect(
+  diffview.statusline_file_summary() == long_relative_path .. "  +1 -1",
+  "the status line should summarize the selected file beside its full repository path"
+)
+local rendered_statusline = require("lualine").statusline()
+expect(
+  rendered_statusline:find(long_relative_path, 1, true) ~= nil,
+  "the footer should render the full repository path"
+)
+expect(rendered_statusline:find("+1", 1, true) ~= nil, "the footer should render the selected file additions")
+expect(rendered_statusline:find("-1", 1, true) ~= nil, "the footer should render the selected file deletions")
+
 local source_windows = 0
+local source_window
 local source_sides = {}
 local local_buffer
 for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
   if vim.wo[win].diff then
     source_windows = source_windows + 1
+    source_window = source_window or win
     source_sides[vim.w[win].micrographics_diffview_gutter_hl] = true
     expect_source_window(win)
     local buffer = vim.api.nvim_win_get_buf(win)
@@ -365,6 +420,20 @@ for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
 end
 expect(source_windows == 2, "Diffview should install the gutter in both source panes")
 expect(source_sides.Removed and source_sides.Added, "Diffview should identify its old and new panes")
+vim.api.nvim_set_current_win(source_window)
+expect(
+  vim.wait(1_000, function()
+    return view.panel:get_width() == options.file_panel.win_config.width
+  end, 20),
+  "the Diffview file panel should contract when focus returns to the diff"
+)
+vim.api.nvim_set_current_win(view.panel.winid)
+expect(
+  vim.wait(1_000, function()
+    return view.panel:get_width() == expanded_panel_width
+  end, 20),
+  "the Diffview file panel should expand again when focused"
+)
 if local_buffer and package.loaded.gitsigns then
   vim.wait(1_000, function()
     return vim.b[local_buffer].gitsigns_status_dict ~= nil
@@ -469,6 +538,7 @@ end
 
 vim.t.diffview_context = nil
 expect(not diffview.has_statusline_context(), "ordinary tabs should not show Diffview context")
+expect(not diffview.has_statusline_file(), "ordinary tabs should not show a Diffview file summary")
 vim.t.diffview_context = "feature  PR #42"
 expect(diffview.statusline() == "feature  PR #42", "Diffview context should include the branch and pull request")
 vim.t.diffview_context = nil

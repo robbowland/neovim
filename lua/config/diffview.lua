@@ -262,6 +262,47 @@ function M.git_token(branch)
   return (branch or "") ~= "" and ("[ GIT: %s ]"):format(branch) or ""
 end
 
+local function is_statusline_file(file)
+  return type(file) == "table" and type(file.path) == "string" and file.path ~= "" and file.path ~= "null"
+end
+
+local function call_file_accessor(owner, name)
+  local accessor = owner and owner[name]
+  if type(accessor) == "function" then
+    local ok, file = pcall(accessor, owner)
+    return ok and file or nil
+  end
+
+  return accessor
+end
+
+local function statusline_file()
+  local lib = package.loaded["diffview.lib"]
+  if not (lib and lib.get_current_view) then
+    return nil
+  end
+
+  local ok, view = pcall(lib.get_current_view)
+  if not ok or not view then
+    return nil
+  end
+
+  local file = call_file_accessor(view, "infer_cur_file")
+  if is_statusline_file(file) then
+    return file
+  end
+
+  file = call_file_accessor(view, "cur_file")
+  if is_statusline_file(file) then
+    return file
+  end
+
+  file = call_file_accessor(view.panel, "cur_file")
+  if is_statusline_file(file) then
+    return file
+  end
+end
+
 function M.statusline()
   local branch = vim.t.diffview_context or ""
   if branch == "" then
@@ -273,6 +314,25 @@ end
 
 function M.has_statusline_context()
   return M.statusline() ~= ""
+end
+
+function M.statusline_file_summary()
+  local file = statusline_file()
+  if not file then
+    return ""
+  end
+
+  local additions = file.stats and file.stats.additions
+  local deletions = file.stats and file.stats.deletions
+  if type(additions) == "number" and type(deletions) == "number" then
+    return ("%s  +%d -%d"):format(file.path, additions, deletions)
+  end
+
+  return file.path
+end
+
+function M.has_statusline_file()
+  return M.statusline_file_summary() ~= ""
 end
 
 return M

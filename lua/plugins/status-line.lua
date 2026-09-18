@@ -34,6 +34,10 @@ local mode_aliases = {
   COMMAND = "cmnd",
 }
 
+local function has_no_diffview_file()
+  return not diffview.has_statusline_file()
+end
+
 return {
   {
     "nvim-lualine/lualine.nvim",
@@ -49,7 +53,17 @@ return {
           },
 
           sections = {
-            lualine_a = { "filename", { "location", padding = { left = 0 } } },
+            lualine_a = {
+              {
+                diffview.statusline_file_summary,
+                cond = diffview.has_statusline_file,
+              },
+              {
+                "filename",
+                cond = has_no_diffview_file,
+              },
+              { "location", padding = { left = 0 } },
+            },
             lualine_b = {},
             lualine_c = {},
             lualine_x = {
@@ -74,7 +88,10 @@ return {
                   return not diffview.has_statusline_context()
                 end,
               },
-              "diff",
+              {
+                "diff",
+                cond = has_no_diffview_file,
+              },
             },
             lualine_z = {
               {
@@ -88,7 +105,16 @@ return {
           },
 
           inactive_sections = {
-            lualine_a = { "filename" },
+            lualine_a = {
+              {
+                diffview.statusline_file_summary,
+                cond = diffview.has_statusline_file,
+              },
+              {
+                "filename",
+                cond = has_no_diffview_file,
+              },
+            },
             lualine_b = {},
             lualine_c = {},
             lualine_x = {},

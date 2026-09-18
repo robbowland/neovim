@@ -12,6 +12,100 @@ local mouse_scroll_keycodes = {
 }
 local mouse_scroll_namespace = vim.api.nvim_create_namespace("micrographics_diffview_mouse_scroll")
 local large_diff_line_limit = 10000
+local file_panel_compact_width = 35
+local file_panel_min_editor_width = 20
+
+local function refresh_statusline()
+  if package.loaded.lualine then
+    pcall(require("lualine").refresh, { place = { "statusline" } })
+    return
+  end
+
+  vim.cmd.redrawstatus()
+end
+
+local function file_panel_max_width()
+  local preserve_editor = vim.o.columns - file_panel_min_editor_width
+  local proportional_width = math.floor(vim.o.columns * 0.6)
+
+  return math.max(file_panel_compact_width, math.min(preserve_editor, proportional_width))
+end
+
+local function file_panel_content_width(view)
+  local panel = view and view.panel
+  if not (panel and panel.bufid and vim.api.nvim_buf_is_valid(panel.bufid)) then
+    return file_panel_compact_width
+  end
+
+  local width = file_panel_compact_width
+  for _, line in ipairs(vim.api.nvim_buf_get_lines(panel.bufid, 0, -1, false)) do
+    width = math.max(width, vim.fn.strdisplaywidth(line) + 2)
+  end
+
+  local root = panel.adapter and panel.adapter.ctx and panel.adapter.ctx.toplevel
+  if root then
+    width = math.max(width, vim.fn.strdisplaywidth(vim.fn.fnamemodify(root, ":~")) + 6)
+  end
+
+  return math.min(width, file_panel_max_width())
+end
+
+local function resize_file_panel(view, expanded)
+  local panel = view and view.panel
+  if not (panel and panel.is_open and panel:is_open()) then
+    return
+  end
+
+  local config = panel:get_config()
+  if config.type ~= "split" or not vim.tbl_contains({ "left", "right" }, config.position) then
+    return
+  end
+
+  local width = expanded and file_panel_content_width(view) or file_panel_compact_width
+  if panel:get_width() ~= width then
+    vim.api.nvim_win_set_width(panel.winid, width)
+    panel:render()
+    panel:redraw()
+  end
+end
+
+local function configure_adaptive_file_panel(view)
+  local panel = view and view.panel
+  if not (panel and panel.on_autocmd) then
+    return
+  end
+
+  local config = panel:get_config()
+  if config.type ~= "split" or not vim.tbl_contains({ "left", "right" }, config.position) then
+    return
+  end
+
+  panel:on_autocmd("WinEnter", {
+    callback = function()
+      resize_file_panel(view, true)
+      refresh_statusline()
+    end,
+  })
+  panel:on_autocmd("WinLeave", {
+    callback = function()
+      resize_file_panel(view, false)
+      refresh_statusline()
+    end,
+  })
+
+  view.emitter:on("files_updated", function()
+    resize_file_panel(view, panel:is_focused())
+    refresh_statusline()
+  end)
+  view.emitter:on("file_open_post", function()
+    refresh_statusline()
+  end)
+
+  vim.schedule(function()
+    resize_file_panel(view, panel:is_focused())
+    refresh_statusline()
+  end)
+end
 
 local function diffview_lsp_clients(bufnr)
   if vim.lsp.get_clients then
@@ -343,10 +437,29 @@ return {
 
     return {
       hooks = {
-        view_opened = hide_tabline,
-        view_closed = restore_tabline,
-        view_enter = enable_mouse_scroll_sync,
-        view_leave = disable_mouse_scroll_sync,
+        view_opened = function(view)
+          hide_tabline()
+          configure_adaptive_file_panel(view)
+        end,
+        view_enter = function(view)
+          enable_mouse_scroll_sync()
+          resize_file_panel(view, view and view.panel and view.panel:is_focused())
+          refresh_statusline()
+        end,
+        view_leave = function(view)
+          resize_file_panel(view, false)
+          disable_mouse_scroll_sync()
+          refresh_statusline()
+        end,
+        view_closed = function()
+          restore_tabline()
+          refresh_statusline()
+        end,
+        view_post_layout = function(view)
+          vim.schedule(function()
+            resize_file_panel(view, view and view.panel and view.panel:is_focused())
+          end)
+        end,
         diff_buf_read = tune_diff_buffer,
         diff_buf_win_enter = function(bufnr, win, context)
           tune_diff_buffer(bufnr)
@@ -357,7 +470,7 @@ return {
         end,
       },
       file_panel = {
-        win_config = { position = "right" },
+        win_config = { position = "right", width = file_panel_compact_width },
       },
       keymaps = {
         view = {
