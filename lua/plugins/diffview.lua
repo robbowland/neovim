@@ -116,6 +116,27 @@ local function disable_mouse_scroll_sync()
   vim.on_key(nil, mouse_scroll_namespace)
 end
 
+-- A view's tab makes Neovim's tabline appear, and all it says is the view's
+-- window count and buffer ("3 d//null"): hide it while any view is open.
+local showtabline_before
+
+local function hide_tabline()
+  if showtabline_before == nil then
+    showtabline_before = vim.o.showtabline
+  end
+  vim.o.showtabline = 0
+end
+
+-- view_closed fires before the view leaves diffview.lib's list.
+local function restore_tabline()
+  vim.schedule(function()
+    if showtabline_before ~= nil and #require("diffview.lib").views == 0 then
+      vim.o.showtabline = showtabline_before
+      showtabline_before = nil
+    end
+  end)
+end
+
 local function find_conflict_marker(path)
   local handle = io.open(path, "r")
   if not handle then
@@ -322,6 +343,8 @@ return {
 
     return {
       hooks = {
+        view_opened = hide_tabline,
+        view_closed = restore_tabline,
         view_enter = enable_mouse_scroll_sync,
         view_leave = disable_mouse_scroll_sync,
         diff_buf_read = tune_diff_buffer,
