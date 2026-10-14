@@ -66,7 +66,10 @@ return {
                 cond = diffview.has_statusline_context,
               },
               {
+                -- A code token, [ GIT: main ], not a Nerd Font branch icon.
                 "branch",
+                icon = "",
+                fmt = diffview.git_token,
                 cond = function()
                   return not diffview.has_statusline_context()
                 end,

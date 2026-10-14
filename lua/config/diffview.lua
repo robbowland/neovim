@@ -82,7 +82,7 @@ local function add_pr_number(cwd, branch, tabpage)
         return
       end
 
-      vim.t[tabpage].diffview_context = ("%s  PR #%s"):format(branch, number)
+      vim.t[tabpage].diffview_pr = number
       refresh_statusline()
     end)
   end)
@@ -127,6 +127,7 @@ local function open(command, args, cwd, branch)
   end
 
   vim.t[view.tabpage].diffview_context = branch
+  vim.t[view.tabpage].diffview_pr = nil
   refresh_statusline()
   add_pr_number(cwd, branch, view.tabpage)
 end
@@ -255,8 +256,19 @@ function M.goto_file()
   require("diffview.actions").goto_file_edit()
 end
 
+-- The review's branch and pull request as Micrographics code tokens, like the
+-- vault's [ LNK: title ]: [ GIT: main ]  [ PR: #475 ].
+function M.git_token(branch)
+  return (branch or "") ~= "" and ("[ GIT: %s ]"):format(branch) or ""
+end
+
 function M.statusline()
-  return vim.t.diffview_context or ""
+  local branch = vim.t.diffview_context or ""
+  if branch == "" then
+    return ""
+  end
+  local pr = vim.t.diffview_pr
+  return M.git_token(branch) .. (pr and ("  [ PR: #%s ]"):format(pr) or "")
 end
 
 function M.has_statusline_context()
