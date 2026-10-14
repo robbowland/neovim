@@ -8,6 +8,8 @@ local dir = vim.env.WEAVER_NVIM_DIR or (data .. "/weaver/nvim")
 return {
   dir = dir,
   name = "weaver",
-  lazy = true,
+  -- On the runtimepath from the start (it runs nothing until a mapping
+  -- requires it), so :checkhealth weaver finds it too.
+  lazy = false,
   cond = vim.uv.fs_stat(dir .. "/lua/weaver/diffview.lua") ~= nil,
 }
