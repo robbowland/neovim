@@ -20,6 +20,13 @@ local theme = {
   },
 }
 
+-- In an nvim weaver opened for an agent: the agent's state wherever weaver's
+-- own bar (a winbar on file windows) is not shown, such as in a review.
+local function agent()
+  local status = package.loaded["weaver.status"]
+  return status and status.statusline and status.statusline() or ""
+end
+
 local mode_aliases = {
   NORMAL = "nrml",
   INSERT = "insr",
@@ -45,7 +52,14 @@ return {
             lualine_a = { "filename", { "location", padding = { left = 0 } } },
             lualine_b = {},
             lualine_c = {},
-            lualine_x = {},
+            lualine_x = {
+              {
+                agent,
+                cond = function()
+                  return agent() ~= ""
+                end,
+              },
+            },
             lualine_y = {
               {
                 diffview.statusline,

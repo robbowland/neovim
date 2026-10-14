@@ -330,6 +330,9 @@ expect(
   end, 50),
   "Diffview should load real diff buffers"
 )
+-- Read the global colours from a plain window: Diffview's windows carry the
+-- gutter-only 'winhighlight' source mapping, which would apply instead.
+vim.cmd("tabnew")
 expect_foreground("DiffviewFilePanelInsertions", "#39d97a")
 expect_foreground("DiffviewStatusAdded", "#39d97a")
 expect_foreground("DiffviewStatusModified", "#999999")
@@ -340,6 +343,7 @@ expect_background_only("DiffviewDiffChange", "#1c1c1c")
 expect_background_only("DiffviewDiffText", "#333333")
 expect_background_only("DiffviewDiffAddAsDelete", "#2a1514")
 expect_unstyled("MicrographicsDiffviewSource")
+vim.cmd("tabclose")
 
 local view = require("diffview.lib").get_current_view()
 expect(view ~= nil, "Diffview should open a view")
@@ -368,7 +372,7 @@ if local_buffer and package.loaded.gitsigns then
   require("gitsigns").detach(local_buffer)
 end
 
-vim.cmd("DiffviewClose")
+diffview.close()
 diffview.open_all_changes_history()
 expect(
   vim.wait(5_000, function()
@@ -379,15 +383,65 @@ expect(
   "Diffview should load full-branch history"
 )
 expect(vim.t.diffview_context == "feature", "full-branch history should identify its branch")
-vim.cmd("DiffviewClose")
+diffview.close()
+
+for _, section in ipairs({ "view", "file_panel", "file_history_panel" }) do
+  local goto_file = configured_diffview_mapping(options, section, "gf")
+  expect(goto_file ~= nil and type(goto_file[3]) == "function", "gf in the " .. section .. " should open the file in its worktree tab")
+end
+
+-- With weaver installed, the Git diff mappings share one review view: pressed
+-- again from elsewhere a mapping returns to its view, pressed inside it closes
+-- it, and another mapping replaces it. The branch base no longer needs
+-- origin/HEAD.
+local has_single_view, single_view = pcall(require, "weaver.diffview")
+if has_single_view then
+  local function review_tabs()
+    local count = 0
+    for _, tabpage in ipairs(vim.api.nvim_list_tabpages()) do
+      if vim.t[tabpage].diffview_scope then
+        count = count + 1
+      end
+    end
+    return count
+  end
+  local function review_ready()
+    return vim.wait(5_000, function()
+      local current = single_view.current()
+      return current ~= nil and not current.is_loading
+    end, 50)
+  end
+
+  git({ "symbolic-ref", "--delete", "refs/remotes/origin/HEAD" })
+  local spec_tab = vim.api.nvim_get_current_tabpage()
+  diffview.open_all_changes()
+  expect(review_ready(), "the full-branch diff should open without origin/HEAD")
+  expect(vim.t.diffview_context == "feature", "the shared full-branch view should identify its branch")
+  local branch_tab = vim.api.nvim_get_current_tabpage()
+  vim.api.nvim_set_current_tabpage(spec_tab)
+  diffview.open_all_changes()
+  expect(vim.api.nvim_get_current_tabpage() == branch_tab, "pressing the mapping again should return to its view")
+  expect(review_tabs() == 1, "returning should not open a second view")
+  diffview.open_working_tree()
+  expect(review_ready(), "the working-tree diff should open")
+  expect(review_tabs() == 1, "another mapping should replace the view")
+  diffview.open_working_tree()
+  expect(
+    vim.wait(2_000, function()
+      return review_tabs() == 0
+    end, 50),
+    "pressing the mapping inside its view should close it"
+  )
+end
 vim.cmd("lcd " .. vim.fn.fnameescape(original_cwd))
 vim.fn.delete(test_repo, "rf")
 
-expect_command_mapping("<leader>gd", "DiffviewOpen", "Git Diff (Working Tree)")
+expect(spec[1] == "dlyongemallo/diffview-plus.nvim", "Diffview should come from the maintained diffview-plus fork")
+expect_function_mapping("<leader>gd", "Git Diff (Working Tree)")
 expect_function_mapping("<leader>gD", "Git Diff (Full Branch)")
 expect_function_mapping("<leader>gA", "Git Diff (Full Branch by Commit)")
 expect_function_mapping("<leader>gV", "Git Diff (Current PR Layer)")
-expect_command_mapping("<leader>gq", "DiffviewClose", "Close Diffview")
+expect_function_mapping("<leader>gq", "Close Diffview")
 expect_command_mapping("<leader>gF", "DiffviewFileHistory --base=LOCAL %", "Git Current File History (Diffview)")
 expect_command_mapping(
   "<leader>gR",

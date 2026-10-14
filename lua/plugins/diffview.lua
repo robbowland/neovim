@@ -276,15 +276,24 @@ local function write_merge_file()
   end)
 end
 
+local function goto_file()
+  require("config.diffview").goto_file()
+end
+
 return {
-  "sindrets/diffview.nvim",
+  -- The maintained fork of sindrets/diffview.nvim; it keeps the `diffview`
+  -- module name. Tagged releases, since it moves quickly.
+  "dlyongemallo/diffview-plus.nvim",
+  version = "*",
   cmd = {
     "DiffviewClose",
     "DiffviewFileHistory",
     "DiffviewFocusFiles",
     "DiffviewOpen",
     "DiffviewRefresh",
+    "DiffviewToggle",
     "DiffviewToggleFiles",
+    "DiffviewWorktreeOverview",
   },
   init = function()
     vim.api.nvim_create_user_command("DiffviewPR", function()
@@ -329,21 +338,32 @@ return {
       },
       keymaps = {
         view = {
+          { "n", "gf", goto_file, { desc = "Open the file in its worktree tab" } },
           { "n", "zR", expand_all_folds, { desc = "Expand all unchanged sections" } },
           { "n", "zM", collapse_all_folds, { desc = "Collapse all unchanged sections" } },
           { "n", "<leader>cw", write_merge_file, { desc = "Save resolved merge file" } },
         },
         file_panel = {
+          { "n", "gf", goto_file, { desc = "Open the file in its worktree tab" } },
           { "n", "-", guarded_toggle_stage_entry(actions), { desc = "Stage / unstage the selected entry" } },
           { "n", "s", guarded_toggle_stage_entry(actions), { desc = "Stage / unstage the selected entry" } },
           { "n", "S", guarded_stage_all(actions), { desc = "Stage all entries" } },
           { "n", "<leader>cw", write_merge_file, { desc = "Save resolved merge file" } },
         },
+        file_history_panel = {
+          { "n", "gf", goto_file, { desc = "Open the file in its worktree tab" } },
+        },
       },
     }
   end,
   keys = {
-    { "<leader>gd", "<cmd>DiffviewOpen<cr>", desc = "Git Diff (Working Tree)" },
+    {
+      "<leader>gd",
+      function()
+        require("config.diffview").open_working_tree()
+      end,
+      desc = "Git Diff (Working Tree)",
+    },
     {
       "<leader>gD",
       function()
@@ -365,7 +385,13 @@ return {
       end,
       desc = "Git Diff (Current PR Layer)",
     },
-    { "<leader>gq", "<cmd>DiffviewClose<cr>", desc = "Close Diffview" },
+    {
+      "<leader>gq",
+      function()
+        require("config.diffview").close()
+      end,
+      desc = "Close Diffview",
+    },
     {
       "<leader>gF",
       "<cmd>DiffviewFileHistory --base=LOCAL %<cr>",

@@ -88,6 +88,31 @@ local function add_pr_number(cwd, branch, tabpage)
   end)
 end
 
+-- weaver's one-view review (lua/plugins/weaver.lua), when weaver is
+-- installed: a mapping pressed again brings its view back, or closes it from
+-- inside, and another mapping replaces it rather than opening a second tab.
+local function single_view()
+  local ok, module = pcall(require, "weaver.diffview")
+  return ok and module or nil
+end
+
+-- The repository a mapping acts on: the open review's while you are in it.
+local function review_root(single)
+  local view = single and single.current()
+  if view and view.tabpage == vim.api.nvim_get_current_tabpage() then
+    return single.root_here()
+  end
+  return git_root()
+end
+
+local function show(single, spec, branch)
+  local view = single.show(spec)
+  if view then
+    refresh_statusline()
+    add_pr_number(spec.root, branch, view.tabpage)
+  end
+end
+
 local function open(command, args, cwd, branch)
   table.insert(args, 1, "-C" .. vim.fn.fnameescape(cwd))
   local ok, err = pcall(vim.cmd[command], { args = args })
@@ -139,24 +164,51 @@ local function resolve_pr_base(root, callback)
   end)
 end
 
-function M.open_all_changes()
-  local root = git_root()
+function M.open_working_tree()
+  local single = single_view()
+  if not single then
+    vim.cmd("DiffviewOpen")
+    return
+  end
+  local root = review_root(single)
   if not root then
     return
   end
   local branch = current_branch(root)
 
-  open("DiffviewOpen", { ("origin/HEAD...%s"):format(branch), "--imply-local" }, root, branch)
+  show(single, { key = "working tree", label = branch, root = root, compare = { kind = "index" } }, branch)
+end
+
+function M.open_all_changes()
+  local single = single_view()
+  local root = review_root(single)
+  if not root then
+    return
+  end
+  local branch = current_branch(root)
+
+  if not single then
+    open("DiffviewOpen", { ("origin/HEAD...%s"):format(branch), "--imply-local" }, root, branch)
+    return
+  end
+  local base = single.default_base(root)
+  if not base then
+    notify("No base branch: no upstream or origin default branch, main or master", vim.log.levels.ERROR)
+    return
+  end
+  show(single, { key = "branch", label = branch, root = root, compare = { kind = "branch", base = base } }, branch)
 end
 
 function M.open_all_changes_history()
+  local single = single_view()
   local root = git_root()
   if not root then
     return
   end
   local branch = current_branch(root)
+  local base = single and single.default_base(root) or "origin/HEAD"
 
-  open("DiffviewFileHistory", { ("--range=origin/HEAD..%s"):format(branch), "--base=LOCAL" }, root, branch)
+  open("DiffviewFileHistory", { ("--range=%s..%s"):format(base, branch), "--base=LOCAL" }, root, branch)
 end
 
 function M.open_current_pr_diff()
@@ -170,8 +222,37 @@ function M.open_current_pr_diff()
   local branch = current_branch(root)
 
   resolve_pr_base(root, function(base)
+    local single = single_view()
+    if single then
+      show(single, { key = "pull request", label = branch, root = root, compare = { kind = "branch", base = base } }, branch)
+      return
+    end
     open("DiffviewOpen", { ("%s...HEAD"):format(base), "--imply-local" }, root, branch)
   end)
+end
+
+-- Close the Diffview in this tab. With weaver, once the view has finished
+-- opening its file (closing earlier raises errors inside Diffview), and from
+-- the tab you came from (closing the current tab fails while noice has a
+-- float in it).
+function M.close()
+  local single = single_view()
+  if single then
+    single.close()
+    return
+  end
+  vim.cmd("DiffviewClose")
+end
+
+-- gf in a review: the file at the same line, in the tab whose working
+-- directory holds it (its worktree's tab), not just the previous tab.
+function M.goto_file()
+  local single = single_view()
+  if single then
+    single.goto_file()
+    return
+  end
+  require("diffview.actions").goto_file_edit()
 end
 
 function M.statusline()

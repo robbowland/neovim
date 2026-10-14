@@ -18,12 +18,12 @@ Use `:set background=light | colorscheme micrographics` for positive polarity, o
 
 ## Git diffs
 
-Diffview owns the side-by-side review mappings while LazyVim keeps `<leader>gf` for its file-history picker.
+[diffview-plus](https://github.com/dlyongemallo/diffview-plus.nvim), the maintained fork of Diffview, owns the side-by-side review mappings while LazyVim keeps `<leader>gf` for its file-history picker. With weaver installed, the working-tree, full-branch and PR views share one review tab: pressing a mapping again from elsewhere returns to its view, pressing it inside the view closes it, and another mapping replaces it. Without weaver they open plain Diffview tabs.
 
 | Mapping | View |
 | --- | --- |
 | `<leader>gd` | Working tree and index |
-| `<leader>gD` | Full branch against `origin/HEAD`, including local changes |
+| `<leader>gD` | Full branch against the remote's default branch, including local changes |
 | `<leader>gA` | Full branch grouped by commit, with local changes |
 | `<leader>gV` | Current pull-request layer against its GitHub base |
 | `<leader>gF` | Current-file history, including local changes |
@@ -33,7 +33,7 @@ Diffview owns the side-by-side review mappings while LazyVim keeps `<leader>gf` 
 | `<leader>gM` | Previous commit against `HEAD` |
 | `<leader>gq` | Close Diffview |
 
-PR-layer diffs and PR numbers in the status line require an authenticated GitHub CLI. In the file panel, `-` or `s` toggles staging and `S` stages everything; unresolved conflict markers require confirmation. `<leader>cw` saves the resolved merge file. Closed unchanged sections appear as full-width labelled dividers showing the hidden count and file-line range; `zO` expands one, `zR` expands all, and `zM` collapses all. Large diff buffers disable expensive editor services, while the existing right-hand file panel and Micrographics gutter-only change highlighting remain unchanged.
+The full-branch base is the `upstream` or `origin` default branch (where its `HEAD` points, else `main` or `master`), else a local `main` or `master`; without weaver it is `origin/HEAD`. With weaver, `gf` in any Diffview opens the file at the same line in the tab of its own worktree. PR-layer diffs and PR numbers in the status line require an authenticated GitHub CLI. In the file panel, `-` or `s` toggles staging and `S` stages everything; unresolved conflict markers require confirmation. `<leader>cw` saves the resolved merge file. Closed unchanged sections appear as full-width labelled dividers showing the hidden count and file-line range; `zO` expands one, `zR` expands all, and `zM` collapses all. Large diff buffers disable expensive editor services, while the existing right-hand file panel and Micrographics gutter-only change highlighting remain unchanged.
 
 <p align="center">
   <a>sections</a> •
