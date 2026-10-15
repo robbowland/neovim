@@ -15,6 +15,12 @@ return {
     })
     set_context_theme()
 
-    return { max_lines = 20 }
+    return {
+      max_lines = 20,
+      -- Diffview flags its buffers so the diff panes stay aligned.
+      on_attach = function(buf)
+        return not vim.b[buf].ts_context_disable
+      end,
+    }
   end,
 }

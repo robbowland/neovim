@@ -145,8 +145,20 @@ vim.api.nvim_buf_set_lines(new_buf, 0, -1, false, new_lines)
 vim.cmd("diffthis")
 vim.cmd("diffupdate")
 
+local context_rechecked = {}
+local context_recheck = vim.api.nvim_create_autocmd("BufReadPost", {
+  group = vim.api.nvim_create_augroup("treesitter_context_update", { clear = false }),
+  callback = function(event)
+    context_rechecked[event.buf] = true
+  end,
+})
 diff_buf_win_enter(old_buf, old_win, { symbol = "a", layout_name = "diff2_horizontal" })
 diff_buf_win_enter(new_buf, new_win, { symbol = "b", layout_name = "diff2_horizontal" })
+vim.api.nvim_del_autocmd(context_recheck)
+expect(
+  context_rechecked[old_buf] and context_rechecked[new_buf],
+  "Diffview should ask treesitter-context to recheck files already open"
+)
 expect_source_window(old_win)
 expect_source_window(new_win)
 for _, win in ipairs({ old_win, new_win }) do
@@ -559,6 +571,29 @@ expect(
 )
 vim.t.diffview_context = nil
 vim.t.diffview_pr = nil
+
+local context_options = dofile(root .. "/lua/plugins/treesitter-context.lua").opts(nil, {})
+local context_buf = vim.api.nvim_create_buf(false, true)
+vim.b[context_buf].ts_context_disable = true
+expect(context_options.on_attach(context_buf) == false, "treesitter-context should skip buffers Diffview flags")
+vim.b[context_buf].ts_context_disable = nil
+expect(context_options.on_attach(context_buf) == true, "treesitter-context should attach to other buffers")
+
+vim.cmd("new")
+local context_win = vim.api.nvim_get_current_win()
+vim.api.nvim_win_set_buf(context_win, context_buf)
+diff_buf_win_enter(context_buf, context_win, { symbol = "b", layout_name = "diff2_horizontal" })
+vim.b[context_buf].ts_context_disable = true
+hooks.view_closed()
+vim.wait(1000, function()
+  return vim.b[context_buf].ts_context_disable == nil
+end)
+expect(
+  vim.b[context_buf].ts_context_disable == nil,
+  "Diffview should clear the context flag on working-tree files once the view closes"
+)
+vim.api.nvim_win_close(context_win, true)
+vim.api.nvim_buf_delete(context_buf, { force = true })
 
 local which_key_options = {}
 dofile(root .. "/lua/plugins/which-key.lua").opts(nil, which_key_options)

@@ -258,6 +258,46 @@ local function restore_tabline()
   end)
 end
 
+-- Context headers differ in height between the panes, so their tops stop
+-- lining up. Diffview flags its buffers with ts_context_disable, which
+-- treesitter-context reads (lua/plugins/treesitter-context.lua) only on
+-- BufReadPost: ask again for files that were open before the view.
+-- Diffview clears the flag on working-tree files when you switch files but
+-- not when the view closes, so the files are remembered and cleared here.
+local context_flagged_files = {}
+
+local function recheck_treesitter_context(bufnr)
+  if not vim.api.nvim_buf_get_name(bufnr):match("^diffview://") then
+    context_flagged_files[bufnr] = true
+  end
+  pcall(vim.api.nvim_exec_autocmds, "BufReadPost", {
+    buffer = bufnr,
+    group = "treesitter_context_update",
+    -- The modeline pass could :set a read-only diff buffer (E21).
+    modeline = false,
+  })
+end
+
+-- view_closed fires before the view leaves diffview.lib's list.
+local function restore_treesitter_context()
+  vim.schedule(function()
+    if #require("diffview.lib").views > 0 then
+      return
+    end
+    for bufnr in pairs(context_flagged_files) do
+      if vim.api.nvim_buf_is_valid(bufnr) then
+        vim.b[bufnr].ts_context_disable = nil
+      end
+    end
+    context_flagged_files = {}
+
+    local context = package.loaded["treesitter-context"]
+    if context and context.enabled() then
+      context.enable()
+    end
+  end)
+end
+
 local function find_conflict_marker(path)
   local handle = io.open(path, "r")
   if not handle then
@@ -491,6 +531,7 @@ return {
         end,
         view_closed = function()
           restore_tabline()
+          restore_treesitter_context()
           refresh_statusline()
         end,
         view_post_layout = function(view)
@@ -503,6 +544,7 @@ return {
         diff_buf_win_enter = function(bufnr, win, context)
           tune_diff_buffer(bufnr)
           tune_diff_window(bufnr, win)
+          recheck_treesitter_context(bufnr)
           vim.w[win].micrographics_diffview_gutter_hl = gutter_highlight(context)
           hide_source_highlights(win)
           vim.wo[win].statuscolumn = statuscolumn
