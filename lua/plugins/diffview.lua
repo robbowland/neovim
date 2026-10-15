@@ -308,27 +308,28 @@ local function restore_treesitter_context()
   end)
 end
 
+-- The line of the first complete <<<<<<< … ======= … >>>>>>> region.
 local function find_conflict_marker(path)
   local handle = io.open(path, "r")
   if not handle then
     return nil
   end
 
-  local start_line
-  local has_separator = false
+  -- nil outside a conflict; inside one, the half being read and its start.
+  ---@type { half: "ours"|"theirs", start: integer }?
+  local conflict
   local line_number = 0
 
   for line in handle:lines() do
     line_number = line_number + 1
 
     if line:match("^<<<<<<<") then
-      start_line = line_number
-      has_separator = false
-    elseif start_line and line:match("^=======$") then
-      has_separator = true
-    elseif start_line and has_separator and line:match("^>>>>>>>") then
+      conflict = { half = "ours", start = line_number }
+    elseif conflict and conflict.half == "ours" and line:match("^=======$") then
+      conflict.half = "theirs"
+    elseif conflict and conflict.half == "theirs" and line:match("^>>>>>>>") then
       handle:close()
-      return start_line
+      return conflict.start
     end
   end
 
