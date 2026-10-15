@@ -149,7 +149,7 @@ expect_source_window(new_win)
 for _, win in ipairs({ old_win, new_win }) do
   expect(not vim.wo[win].wrap, "Diffview source windows should not wrap")
   expect(not vim.wo[win].list, "Diffview source windows should hide list characters")
-  expect(vim.wo[win].colorcolumn == "80", "Diffview source windows should mark column 80")
+  expect(vim.wo[win].colorcolumn == "", "Diffview source windows should not mark a column")
 end
 
 local function render_statuscolumn(win, line)

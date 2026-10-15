@@ -165,7 +165,6 @@ end
 local function tune_diff_window(bufnr, win)
   vim.wo[win].wrap = false
   vim.wo[win].list = false
-  vim.wo[win].colorcolumn = "80"
   vim.wo[win].foldcolumn = "1"
   vim.wo[win].foldtext = foldtext
   vim.api.nvim_win_call(win, function()
