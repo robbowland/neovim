@@ -548,8 +548,13 @@ end
 vim.t.diffview_context = nil
 expect(not diffview.has_statusline_context(), "ordinary tabs should not show Diffview context")
 expect(not diffview.has_statusline_file(), "ordinary tabs should not show a Diffview file summary")
-vim.t.diffview_context = "feature  PR #42"
-expect(diffview.statusline() == "feature  PR #42", "Diffview context should include the branch and pull request")
+vim.t.diffview_context = "feature"
+vim.t.diffview_pr = 42
+expect(
+  diffview.statusline() == "[ GIT: feature ]  [ PR: #42 ]",
+  "Diffview context should include the branch and pull request as code tokens"
+)
 vim.t.diffview_context = nil
+vim.t.diffview_pr = nil
 
 print(("diffview: %d checks passed"):format(checks))
