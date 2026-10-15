@@ -341,26 +341,38 @@ local function file_is_under(file, dir)
   return file.path == dir.path or file.path:sub(1, #dir.path + 1) == dir.path .. "/"
 end
 
+-- The file lists staging adds from; staging a staged entry unstages it.
+local stageable_kinds = { "working", "conflicting" }
+
+-- A panel row is a file entry or a directory, which diffview-plus marks by
+-- its collapsed state.
+local function is_directory(item)
+  return type(item.collapsed) == "boolean"
+end
+
 local function selected_stage_targets(view, item)
-  if not item or item.kind == "staged" then
+  if not (item and vim.tbl_contains(stageable_kinds, item.kind)) then
     return {}
   end
 
-  if item.kind ~= "working" and item.kind ~= "conflicting" then
-    return {}
-  end
-
-  if type(item.collapsed) ~= "boolean" then
+  if not is_directory(item) then
     return { item }
   end
 
-  local source = item.kind == "conflicting" and view.files.conflicting or view.files.working
   local targets = {}
-
-  for _, file in ipairs(source) do
+  for _, file in ipairs(view.files[item.kind]) do
     if file_is_under(file, item) then
       targets[#targets + 1] = file
     end
+  end
+
+  return targets
+end
+
+local function all_stage_targets(view)
+  local targets = {}
+  for _, kind in ipairs(stageable_kinds) do
+    vim.list_extend(targets, view.files[kind])
   end
 
   return targets
@@ -427,18 +439,8 @@ end
 local function guarded_stage_all(actions)
   return function()
     local view = require("diffview.lib").get_current_view()
-    local targets = {}
 
-    if view then
-      for _, file in ipairs(view.files.working) do
-        targets[#targets + 1] = file
-      end
-      for _, file in ipairs(view.files.conflicting) do
-        targets[#targets + 1] = file
-      end
-    end
-
-    confirm_stage_with_conflicts(targets, actions.stage_all)
+    confirm_stage_with_conflicts(view and all_stage_targets(view) or {}, actions.stage_all)
   end
 end
 

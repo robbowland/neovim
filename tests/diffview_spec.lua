@@ -312,11 +312,15 @@ local conflict_lines =
   { "<<<<<<< HEAD", "return { branch = true }", "=======", "return { local_change = true }", ">>>>>>> working" }
 vim.fn.writefile(conflict_lines, test_file)
 
-local stage_mapping = configured_diffview_mapping(options, "file_panel", "-")
 local diffview_lib = require("diffview.lib")
+local example_entry = { kind = "working", path = "example.lua", absolute_path = test_file }
 
--- Press the guarded stage mapping on example.lua, cancelling any prompt.
-local function stage_guard_prompts()
+-- Press a guarded stage mapping with a panel row selected (example.lua by
+-- default) over the working-tree files, cancelling any prompt.
+local function stage_guard_prompts(lhs, selected, working)
+  selected = selected or example_entry
+  working = working or { example_entry }
+  local stage_mapping = configured_diffview_mapping(options, "file_panel", lhs)
   local prompted = false
   local original_confirm = vim.fn.confirm
   local original_get_current_view = diffview_lib.get_current_view
@@ -326,19 +330,26 @@ local function stage_guard_prompts()
   end
   diffview_lib.get_current_view = function()
     return {
+      files = { working = working, conflicting = {}, staged = {} },
       infer_cur_file = function()
-        return { kind = "working", path = "example.lua", absolute_path = test_file }
+        return selected
       end,
     }
   end
   local guarded, guard_error = pcall(stage_mapping[3])
   vim.fn.confirm = original_confirm
   diffview_lib.get_current_view = original_get_current_view
-  expect(guarded, "the staging guard should run: " .. tostring(guard_error))
+  expect(guarded, "the " .. lhs .. " staging guard should run: " .. tostring(guard_error))
   return prompted
 end
 
-expect(stage_guard_prompts(), "the staging guard should warn about unresolved conflict markers")
+expect(stage_guard_prompts("-"), "the staging guard should warn about unresolved conflict markers")
+expect(stage_guard_prompts("S"), "staging everything should warn about unresolved conflict markers")
+local nested_entry = { kind = "working", path = "src/example.lua", absolute_path = test_file }
+expect(
+  stage_guard_prompts("-", { kind = "working", path = "src", collapsed = false }, { nested_entry }),
+  "staging a directory should warn about conflict markers in its files"
+)
 -- Git ends the markers with CRLF when the file uses CRLF.
 vim.fn.writefile(
   vim.tbl_map(function(line)
@@ -346,7 +357,7 @@ vim.fn.writefile(
   end, conflict_lines),
   test_file
 )
-expect(stage_guard_prompts(), "the staging guard should find conflict markers in CRLF files")
+expect(stage_guard_prompts("-"), "the staging guard should find conflict markers in CRLF files")
 vim.fn.writefile(conflict_lines, test_file)
 local staged = vim.system({ "git", "-C", test_repo, "diff", "--cached", "--name-only" }, { text = true }):wait()
 expect(staged.code == 0 and vim.trim(staged.stdout or "") == "", "cancelled staging should leave the index unchanged")
