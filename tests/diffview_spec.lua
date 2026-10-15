@@ -589,10 +589,16 @@ vim.t.diffview_context = nil
 expect(not diffview.has_statusline_context(), "ordinary tabs should not show Diffview context")
 expect(not diffview.has_statusline_file(), "ordinary tabs should not show a Diffview file summary")
 vim.t.diffview_context = "feature"
-vim.t.diffview_pr = 42
+vim.t.diffview_pr = { branch = "feature", number = "42" }
 expect(
   diffview.statusline() == "[ GIT: feature ]  [ PR: #42 ]",
   "Diffview context should include the branch and pull request as code tokens"
+)
+-- weaver can adopt the tab and relabel it.
+vim.t.diffview_context = "other"
+expect(
+  diffview.statusline() == "[ GIT: other ]",
+  "Diffview context should not show a pull request looked up for another branch"
 )
 vim.t.diffview_context = nil
 vim.t.diffview_pr = nil

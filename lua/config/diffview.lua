@@ -66,6 +66,9 @@ local function refresh_statusline()
   vim.cmd.redrawstatus()
 end
 
+-- The pull request is stored with the branch it was looked up for, as
+-- vim.t.diffview_pr = { branch, number }: weaver can adopt a view's tab and
+-- relabel it, and the number must not follow.
 local function add_pr_number(cwd, branch, tabpage)
   if branch == "HEAD" or vim.fn.executable("gh") ~= 1 then
     return
@@ -82,7 +85,7 @@ local function add_pr_number(cwd, branch, tabpage)
         return
       end
 
-      vim.t[tabpage].diffview_pr = number
+      vim.t[tabpage].diffview_pr = { branch = branch, number = number }
       refresh_statusline()
     end)
   end)
@@ -309,7 +312,7 @@ function M.statusline()
     return ""
   end
   local pr = vim.t.diffview_pr
-  return M.git_token(branch) .. (pr and ("  [ PR: #%s ]"):format(pr) or "")
+  return M.git_token(branch) .. (pr and pr.branch == branch and ("  [ PR: #%s ]"):format(pr.number) or "")
 end
 
 function M.has_statusline_context()
