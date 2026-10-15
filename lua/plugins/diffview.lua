@@ -325,7 +325,7 @@ local function find_conflict_marker(path)
 
     if line:match("^<<<<<<<") then
       conflict = { half = "ours", start = line_number }
-    elseif conflict and conflict.half == "ours" and line:match("^=======$") then
+    elseif conflict and conflict.half == "ours" and line:match("^=======\r?$") then
       conflict.half = "theirs"
     elseif conflict and conflict.half == "theirs" and line:match("^>>>>>>>") then
       handle:close()

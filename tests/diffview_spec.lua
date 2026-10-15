@@ -308,32 +308,46 @@ vim.fn.writefile({ "return { branch = true }" }, test_file)
 vim.fn.writefile({ "return { branch = true }" }, long_file)
 git({ "add", "example.lua", long_relative_path })
 git({ "commit", "--quiet", "-m", "Branch change" })
-vim.fn.writefile(
-  { "<<<<<<< HEAD", "return { branch = true }", "=======", "return { local_change = true }", ">>>>>>> working" },
-  test_file
-)
+local conflict_lines =
+  { "<<<<<<< HEAD", "return { branch = true }", "=======", "return { local_change = true }", ">>>>>>> working" }
+vim.fn.writefile(conflict_lines, test_file)
 
 local stage_mapping = configured_diffview_mapping(options, "file_panel", "-")
-local prompted = false
-local original_confirm = vim.fn.confirm
 local diffview_lib = require("diffview.lib")
-local original_get_current_view = diffview_lib.get_current_view
-vim.fn.confirm = function()
-  prompted = true
-  return 1
+
+-- Press the guarded stage mapping on example.lua, cancelling any prompt.
+local function stage_guard_prompts()
+  local prompted = false
+  local original_confirm = vim.fn.confirm
+  local original_get_current_view = diffview_lib.get_current_view
+  vim.fn.confirm = function()
+    prompted = true
+    return 1
+  end
+  diffview_lib.get_current_view = function()
+    return {
+      infer_cur_file = function()
+        return { kind = "working", path = "example.lua", absolute_path = test_file }
+      end,
+    }
+  end
+  local guarded, guard_error = pcall(stage_mapping[3])
+  vim.fn.confirm = original_confirm
+  diffview_lib.get_current_view = original_get_current_view
+  expect(guarded, "the staging guard should run: " .. tostring(guard_error))
+  return prompted
 end
-diffview_lib.get_current_view = function()
-  return {
-    infer_cur_file = function()
-      return { kind = "working", path = "example.lua", absolute_path = test_file }
-    end,
-  }
-end
-local guarded, guard_error = pcall(stage_mapping[3])
-vim.fn.confirm = original_confirm
-diffview_lib.get_current_view = original_get_current_view
-expect(guarded, "the staging guard should run: " .. tostring(guard_error))
-expect(prompted, "the staging guard should warn about unresolved conflict markers")
+
+expect(stage_guard_prompts(), "the staging guard should warn about unresolved conflict markers")
+-- Git ends the markers with CRLF when the file uses CRLF.
+vim.fn.writefile(
+  vim.tbl_map(function(line)
+    return line .. "\r"
+  end, conflict_lines),
+  test_file
+)
+expect(stage_guard_prompts(), "the staging guard should find conflict markers in CRLF files")
+vim.fn.writefile(conflict_lines, test_file)
 local staged = vim.system({ "git", "-C", test_repo, "diff", "--cached", "--name-only" }, { text = true }):wait()
 expect(staged.code == 0 and vim.trim(staged.stdout or "") == "", "cancelled staging should leave the index unchanged")
 
