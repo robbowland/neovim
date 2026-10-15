@@ -1,6 +1,6 @@
 local M = {}
 
-local uv = vim.uv or vim.loop
+local uv = vim.uv
 
 local function notify(message, level)
   vim.notify(message, level or vim.log.levels.INFO, { title = "Diffview" })
@@ -57,7 +57,7 @@ local function current_branch(cwd)
   return result.code == 0 and branch ~= "" and branch or "HEAD"
 end
 
-local function refresh_statusline()
+function M.refresh_statusline()
   if package.loaded.lualine then
     pcall(require("lualine").refresh, { place = { "statusline" } })
     return
@@ -86,7 +86,7 @@ local function add_pr_number(cwd, branch, tabpage)
       end
 
       vim.t[tabpage].diffview_pr = { branch = branch, number = number }
-      refresh_statusline()
+      M.refresh_statusline()
     end)
   end)
 end
@@ -111,7 +111,7 @@ end
 local function show(single, spec, branch)
   local view = single.show(spec)
   if view then
-    refresh_statusline()
+    M.refresh_statusline()
     add_pr_number(spec.root, branch, view.tabpage)
   end
 end
@@ -131,7 +131,7 @@ local function open(command, args, cwd, branch)
 
   vim.t[view.tabpage].diffview_context = branch
   vim.t[view.tabpage].diffview_pr = nil
-  refresh_statusline()
+  M.refresh_statusline()
   add_pr_number(cwd, branch, view.tabpage)
 end
 
@@ -269,41 +269,20 @@ local function is_statusline_file(file)
   return type(file) == "table" and type(file.path) == "string" and file.path ~= "" and file.path ~= "null"
 end
 
-local function call_file_accessor(owner, name)
-  local accessor = owner and owner[name]
-  if type(accessor) == "function" then
-    local ok, file = pcall(accessor, owner)
-    return ok and file or nil
-  end
-
-  return accessor
-end
-
+-- The file under the panel's cursor, else (on a directory row) the file open
+-- in the diff.
 local function statusline_file()
   local lib = package.loaded["diffview.lib"]
-  if not (lib and lib.get_current_view) then
+  local view = lib and lib.get_current_view()
+  if not view then
     return nil
   end
 
-  local ok, view = pcall(lib.get_current_view)
-  if not ok or not view then
-    return nil
+  local ok, file = pcall(view.infer_cur_file, view)
+  if not (ok and is_statusline_file(file)) then
+    file = view.panel.cur_file
   end
-
-  local file = call_file_accessor(view, "infer_cur_file")
-  if is_statusline_file(file) then
-    return file
-  end
-
-  file = call_file_accessor(view, "cur_file")
-  if is_statusline_file(file) then
-    return file
-  end
-
-  file = call_file_accessor(view.panel, "cur_file")
-  if is_statusline_file(file) then
-    return file
-  end
+  return is_statusline_file(file) and file or nil
 end
 
 function M.statusline()

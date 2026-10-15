@@ -43,14 +43,7 @@ local function place_newer_pane_on_left(view)
   end)
 end
 
-local function refresh_statusline()
-  if package.loaded.lualine then
-    pcall(require("lualine").refresh, { place = { "statusline" } })
-    return
-  end
-
-  vim.cmd.redrawstatus()
-end
+local refresh_statusline = require("config.diffview").refresh_statusline
 
 local function file_panel_max_width()
   local preserve_editor = vim.o.columns - file_panel_min_editor_width
@@ -145,16 +138,8 @@ local function configure_adaptive_file_panel(view)
   end)
 end
 
-local function diffview_lsp_clients(bufnr)
-  if vim.lsp.get_clients then
-    return vim.lsp.get_clients({ bufnr = bufnr })
-  end
-
-  return vim.lsp.get_active_clients({ bufnr = bufnr })
-end
-
 local function detach_lsp_clients(bufnr)
-  for _, client in ipairs(diffview_lsp_clients(bufnr)) do
+  for _, client in ipairs(vim.lsp.get_clients({ bufnr = bufnr })) do
     pcall(vim.lsp.buf_detach_client, bufnr, client.id)
   end
 end
