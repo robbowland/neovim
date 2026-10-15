@@ -77,6 +77,9 @@ expect(vim.fn.exists(":DiffviewPR") == 2, ":DiffviewPR should be registered")
 
 local options = type(spec.opts) == "function" and spec.opts() or spec.opts
 expect(options.enhanced_diff_hl == nil, "Diffview should not add body highlighting outside the gutter")
+expect(options.clean_up_buffers == true, "Diffview should delete the buffers a view opened when it closes")
+expect(options.diffopt.algorithm == "histogram", "Diffview should diff with the histogram algorithm")
+expect(options.persist_selections.enabled == true, "Diffview should keep reviewed files across restarts")
 
 local hooks = options.hooks or {}
 local diff_buf_read = hooks.diff_buf_read

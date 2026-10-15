@@ -463,6 +463,15 @@ return {
     })
 
     return {
+      -- Delete the buffers a view opened when it closes; buffers that are
+      -- modified or shown in another tab (gf) are kept.
+      clean_up_buffers = true,
+      -- Histogram aligns moved and refactored code better than Myers; only
+      -- while a view is open.
+      diffopt = { algorithm = "histogram" },
+      -- Files marked reviewed (w) and hidden (H) survive restarts, per
+      -- repository and revision.
+      persist_selections = { enabled = true },
       hooks = {
         view_opened = function(view)
           hide_tabline()
