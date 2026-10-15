@@ -78,51 +78,61 @@ local function file_panel_content_width(view)
   return math.min(width, file_panel_max_width())
 end
 
-local function resize_file_panel(view, expanded)
-  local panel = view and view.panel
-  if not (panel and panel.is_open and panel:is_open()) then
-    return
-  end
-
+-- Only a split beside the diff has a width to adapt.
+local function is_side_split(panel)
   local config = panel:get_config()
-  if config.type ~= "split" or not vim.tbl_contains({ "left", "right" }, config.position) then
+  return config.type == "split" and vim.tbl_contains({ "left", "right" }, config.position)
+end
+
+local function set_file_panel_width(view, width)
+  local panel = view and view.panel
+  if not (panel and panel:is_open() and is_side_split(panel)) or panel:get_width() == width then
     return
   end
 
-  local width = expanded and file_panel_content_width(view) or file_panel_compact_width
-  if panel:get_width() ~= width then
-    vim.api.nvim_win_set_width(panel.winid, width)
-    panel:render()
-    panel:redraw()
+  vim.api.nvim_win_set_width(panel.winid, width)
+  panel:render()
+  panel:redraw()
+end
+
+-- The panel fits its entries while focused and is compact otherwise.
+local function fit_file_panel(view)
+  set_file_panel_width(view, file_panel_content_width(view))
+end
+
+local function compact_file_panel(view)
+  set_file_panel_width(view, file_panel_compact_width)
+end
+
+local function size_file_panel_to_focus(view)
+  if view and view.panel and view.panel:is_focused() then
+    fit_file_panel(view)
+  else
+    compact_file_panel(view)
   end
 end
 
 local function configure_adaptive_file_panel(view)
   local panel = view and view.panel
-  if not (panel and panel.on_autocmd) then
-    return
-  end
-
-  local config = panel:get_config()
-  if config.type ~= "split" or not vim.tbl_contains({ "left", "right" }, config.position) then
+  if not (panel and panel.on_autocmd and is_side_split(panel)) then
     return
   end
 
   panel:on_autocmd("WinEnter", {
     callback = function()
-      resize_file_panel(view, true)
+      fit_file_panel(view)
       refresh_statusline()
     end,
   })
   panel:on_autocmd("WinLeave", {
     callback = function()
-      resize_file_panel(view, false)
+      compact_file_panel(view)
       refresh_statusline()
     end,
   })
 
   view.emitter:on("files_updated", function()
-    resize_file_panel(view, panel:is_focused())
+    size_file_panel_to_focus(view)
     refresh_statusline()
   end)
   view.emitter:on("file_open_post", function()
@@ -130,7 +140,7 @@ local function configure_adaptive_file_panel(view)
   end)
 
   vim.schedule(function()
-    resize_file_panel(view, panel:is_focused())
+    size_file_panel_to_focus(view)
     refresh_statusline()
   end)
 end
@@ -521,11 +531,11 @@ return {
         view_enter = function(view)
           place_newer_pane_on_left(view)
           enable_mouse_scroll_sync()
-          resize_file_panel(view, view and view.panel and view.panel:is_focused())
+          size_file_panel_to_focus(view)
           refresh_statusline()
         end,
         view_leave = function(view)
-          resize_file_panel(view, false)
+          compact_file_panel(view)
           disable_mouse_scroll_sync()
           refresh_statusline()
         end,
@@ -537,7 +547,7 @@ return {
         view_post_layout = function(view)
           place_newer_pane_on_left(view)
           vim.schedule(function()
-            resize_file_panel(view, view and view.panel and view.panel:is_focused())
+            size_file_panel_to_focus(view)
           end)
         end,
         diff_buf_read = tune_diff_buffer,
