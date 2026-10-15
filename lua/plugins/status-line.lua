@@ -44,86 +44,84 @@ return {
     event = "VeryLazy",
     opts = function()
       return {
-        require("lualine").setup({
-          options = {
-            theme = theme,
-            component_separators = "|",
-            section_separators = { right = "", left = "" },
-            always_divide_middle = true,
-          },
+        options = {
+          theme = theme,
+          component_separators = "|",
+          section_separators = { right = "", left = "" },
+          always_divide_middle = true,
+        },
 
-          sections = {
-            lualine_a = {
-              {
-                diffview.statusline_file_summary,
-                cond = diffview.has_statusline_file,
-              },
-              {
-                "filename",
-                cond = has_no_diffview_file,
-              },
-              { "location", padding = { left = 0 } },
+        sections = {
+          lualine_a = {
+            {
+              diffview.statusline_file_summary,
+              cond = diffview.has_statusline_file,
             },
-            lualine_b = {},
-            lualine_c = {},
-            lualine_x = {
-              {
-                agent,
-                cond = function()
-                  return agent() ~= ""
-                end,
-              },
+            {
+              "filename",
+              cond = has_no_diffview_file,
             },
-            lualine_y = {
-              {
-                diffview.statusline,
-                cond = diffview.has_statusline_context,
-              },
-              {
-                -- A code token, [ GIT: main ], not a Nerd Font branch icon.
-                "branch",
-                icon = "",
-                fmt = diffview.git_token,
-                cond = function()
-                  return not diffview.has_statusline_context()
-                end,
-              },
-              {
-                "diff",
-                cond = has_no_diffview_file,
-              },
-            },
-            lualine_z = {
-              {
-                "mode",
-                fmt = function(str)
-                  return mode_aliases[str]
-                end,
-                padding = { left = 1, right = 0 },
-              },
+            { "location", padding = { left = 0 } },
+          },
+          lualine_b = {},
+          lualine_c = {},
+          lualine_x = {
+            {
+              agent,
+              cond = function()
+                return agent() ~= ""
+              end,
             },
           },
+          lualine_y = {
+            {
+              diffview.statusline,
+              cond = diffview.has_statusline_context,
+            },
+            {
+              -- A code token, [ GIT: main ], not a Nerd Font branch icon.
+              "branch",
+              icon = "",
+              fmt = diffview.git_token,
+              cond = function()
+                return not diffview.has_statusline_context()
+              end,
+            },
+            {
+              "diff",
+              cond = has_no_diffview_file,
+            },
+          },
+          lualine_z = {
+            {
+              "mode",
+              fmt = function(str)
+                return mode_aliases[str]
+              end,
+              padding = { left = 1, right = 0 },
+            },
+          },
+        },
 
-          inactive_sections = {
-            lualine_a = {
-              {
-                diffview.statusline_file_summary,
-                cond = diffview.has_statusline_file,
-              },
-              {
-                "filename",
-                cond = has_no_diffview_file,
-              },
+        inactive_sections = {
+          lualine_a = {
+            {
+              diffview.statusline_file_summary,
+              cond = diffview.has_statusline_file,
             },
-            lualine_b = {},
-            lualine_c = {},
-            lualine_x = {},
-            lualine_y = {},
-            lualine_z = {},
+            {
+              "filename",
+              cond = has_no_diffview_file,
+            },
           },
-          tabline = {},
-          extensions = {},
-        }),
+          lualine_b = {},
+          lualine_c = {},
+          lualine_x = {},
+          lualine_y = {},
+          lualine_z = {},
+        },
+        tabline = {},
+        extensions = {},
       }
     end,
   },
