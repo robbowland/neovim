@@ -137,6 +137,12 @@ return {
       title = false,
     })
 
+    -- Diffview mirrors fold commands across its panes under this label.
+    local filter = opts.filter
+    opts.filter = function(mapping)
+      return mapping.desc ~= "diffview_ignore" and (filter == nil or filter(mapping))
+    end
+
     if opts.icons ~= false then
       opts.icons = opts.icons or {}
       if opts.icons.rules ~= false then

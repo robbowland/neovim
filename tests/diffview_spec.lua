@@ -560,4 +560,12 @@ expect(
 vim.t.diffview_context = nil
 vim.t.diffview_pr = nil
 
+local which_key_options = {}
+dofile(root .. "/lua/plugins/which-key.lua").opts(nil, which_key_options)
+expect(
+  which_key_options.filter({ desc = "diffview_ignore" }) == false,
+  "which-key should hide the fold commands Diffview mirrors across panes"
+)
+expect(which_key_options.filter({ desc = "Expand fold" }) == true, "which-key should keep other mappings")
+
 print(("diffview: %d checks passed"):format(checks))
