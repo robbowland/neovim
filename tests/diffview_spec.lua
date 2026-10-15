@@ -500,7 +500,10 @@ diffview.close()
 
 for _, section in ipairs({ "view", "file_panel", "file_history_panel" }) do
   local goto_file = configured_diffview_mapping(options, section, "gf")
-  expect(goto_file ~= nil and type(goto_file[3]) == "function", "gf in the " .. section .. " should open the file in its worktree tab")
+  expect(
+    goto_file ~= nil and type(goto_file[3]) == "function",
+    "gf in the " .. section .. " should open the file in its worktree tab"
+  )
 end
 
 -- With weaver installed, the Git diff mappings share one review view: pressed

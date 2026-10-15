@@ -228,7 +228,11 @@ function M.open_current_pr_diff()
   resolve_pr_base(root, function(base)
     local single = single_view()
     if single then
-      show(single, { key = "pull request", label = branch, root = root, compare = { kind = "branch", base = base } }, branch)
+      show(
+        single,
+        { key = "pull request", label = branch, root = root, compare = { kind = "branch", base = base } },
+        branch
+      )
       return
     end
     open("DiffviewOpen", { ("%s...HEAD"):format(base), "--imply-local" }, root, branch)
