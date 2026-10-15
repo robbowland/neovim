@@ -208,7 +208,8 @@ local function compatible_fold_action(actions, lhs)
   error("Diffview fold action is unavailable: " .. lhs)
 end
 
--- Neovim ignores scrollbind when the mouse wheel targets an inactive window.
+-- Neovim ignores scrollbind when the mouse wheel targets an inactive window,
+-- so the wheel focuses a scroll-bound pane first.
 local function enable_mouse_scroll_sync()
   vim.on_key(function(key, typed)
     local input = typed ~= "" and typed or key
@@ -221,7 +222,7 @@ local function enable_mouse_scroll_sync()
       win > 0
       and vim.api.nvim_win_is_valid(win)
       and win ~= vim.api.nvim_get_current_win()
-      and vim.w[win].micrographics_diffview_gutter_hl
+      and vim.wo[win].scrollbind
     then
       pcall(vim.api.nvim_set_current_win, win)
     end
