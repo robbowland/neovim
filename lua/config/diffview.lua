@@ -108,11 +108,13 @@ local function review_root(single)
   return git_root()
 end
 
-local function show(single, spec, branch)
+-- These views are labelled with their branch, the label add_pr_number checks
+-- the tab still shows.
+local function show(single, spec)
   local view = single.show(spec)
   if view then
     M.refresh_statusline()
-    add_pr_number(spec.root, branch, view.tabpage)
+    add_pr_number(spec.root, spec.label, view.tabpage)
   end
 end
 
@@ -180,7 +182,7 @@ function M.open_working_tree()
   end
   local branch = current_branch(root)
 
-  show(single, { key = "working tree", label = branch, root = root, compare = { kind = "index" } }, branch)
+  show(single, { key = "working tree", label = branch, root = root, compare = { kind = "index" } })
 end
 
 function M.open_all_changes()
@@ -200,7 +202,7 @@ function M.open_all_changes()
     notify("No base branch: no upstream or origin default branch, main or master", vim.log.levels.ERROR)
     return
   end
-  show(single, { key = "branch", label = branch, root = root, compare = { kind = "branch", base = base } }, branch)
+  show(single, { key = "branch", label = branch, root = root, compare = { kind = "branch", base = base } })
 end
 
 function M.open_all_changes_history()
@@ -228,11 +230,7 @@ function M.open_current_pr_diff()
   resolve_pr_base(root, function(base)
     local single = single_view()
     if single then
-      show(
-        single,
-        { key = "pull request", label = branch, root = root, compare = { kind = "branch", base = base } },
-        branch
-      )
+      show(single, { key = "pull request", label = branch, root = root, compare = { kind = "branch", base = base } })
       return
     end
     open("DiffviewOpen", { ("%s...HEAD"):format(base), "--imply-local" }, root, branch)
