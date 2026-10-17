@@ -138,6 +138,95 @@ local function configure_adaptive_file_panel(view)
   end)
 end
 
+-- The file panel stays out of the diff's way: hidden as a view opens,
+-- shown while the mouse rests at the editor's right edge (hidden again once
+-- it moves back into the diff, unless you went into the panel), and
+-- <leader>e shows it and goes there, or hides it from inside.
+local hover_namespace = vim.api.nvim_create_namespace("micrographics_diffview_hover")
+local mouse_move_keycode = vim.api.nvim_replace_termcodes("<MouseMove>", true, false, true)
+local hover_edge = 2 -- columns at the right edge that show the panel
+local hover_slack = 4 -- columns into the diff before a shown panel hides
+local mousemoveevent_before
+
+local function current_view()
+  local lib = package.loaded["diffview.lib"]
+  return lib and lib.get_current_view()
+end
+
+local function hover_file_panel()
+  local view = current_view()
+  local panel = view and view.panel
+  if not (panel and is_side_split(panel)) then
+    return
+  end
+
+  local pos = vim.fn.getmousepos()
+  if not panel:is_open() then
+    local in_editor = pos.screenrow > 0 and pos.screenrow <= vim.o.lines - vim.o.cmdheight - 1
+    if in_editor and pos.screencol > vim.o.columns - hover_edge then
+      view.micrographics_panel_hovered = true
+      panel:open()
+      compact_file_panel(view)
+      refresh_statusline()
+    end
+  elseif view.micrographics_panel_hovered and not panel:is_focused() then
+    local panel_col = vim.fn.win_screenpos(panel.winid)[2]
+    if pos.screencol < panel_col - hover_slack then
+      view.micrographics_panel_hovered = false
+      panel:close()
+      refresh_statusline()
+    end
+  end
+end
+
+local function enable_file_panel_hover()
+  if mousemoveevent_before == nil then
+    mousemoveevent_before = vim.o.mousemoveevent
+  end
+  vim.o.mousemoveevent = true
+  vim.on_key(function(key, typed)
+    if (typed ~= "" and typed or key) == mouse_move_keycode then
+      vim.schedule(hover_file_panel)
+    end
+  end, hover_namespace)
+end
+
+local function disable_file_panel_hover()
+  vim.on_key(nil, hover_namespace)
+  if mousemoveevent_before ~= nil then
+    vim.o.mousemoveevent = mousemoveevent_before
+    mousemoveevent_before = nil
+  end
+end
+
+-- <leader>e: a hidden panel shows and takes the cursor, a shown one takes
+-- it (and stays), and from inside the panel it hides.
+local function toggle_file_panel()
+  local view = current_view()
+  local panel = view and view.panel
+  if not panel then
+    return
+  end
+
+  view.micrographics_panel_hovered = false
+  if panel:is_focused() then
+    panel:close()
+  else
+    panel:focus()
+  end
+  refresh_statusline()
+end
+
+local function hide_file_panel_on_open(view)
+  vim.schedule(function()
+    local panel = view and view.panel
+    if panel and panel:is_open() and is_side_split(panel) then
+      panel:close()
+      refresh_statusline()
+    end
+  end)
+end
+
 local function detach_lsp_clients(bufnr)
   for _, client in ipairs(vim.lsp.get_clients({ bufnr = bufnr })) do
     pcall(vim.lsp.buf_detach_client, bufnr, client.id)
@@ -516,16 +605,19 @@ return {
           hide_tabline()
           place_newer_pane_on_left(view)
           configure_adaptive_file_panel(view)
+          hide_file_panel_on_open(view)
         end,
         view_enter = function(view)
           place_newer_pane_on_left(view)
           enable_mouse_scroll_sync()
+          enable_file_panel_hover()
           size_file_panel_to_focus(view)
           refresh_statusline()
         end,
         view_leave = function(view)
           compact_file_panel(view)
           disable_mouse_scroll_sync()
+          disable_file_panel_hover()
           refresh_statusline()
         end,
         view_closed = function()
@@ -557,12 +649,17 @@ return {
       },
       keymaps = {
         view = {
+          { "n", "<leader>e", toggle_file_panel, { desc = "Files (show and go there, or hide)" } },
+          -- <leader>b is the Buffers group.
+          { "n", "<leader>b", false },
           { "n", "gf", goto_file, { desc = "Open the file in its worktree tab" } },
           { "n", "zR", expand_all_folds, { desc = "Expand all unchanged sections" } },
           { "n", "zM", collapse_all_folds, { desc = "Collapse all unchanged sections" } },
           { "n", "<leader>cw", write_merge_file, { desc = "Save resolved merge file" } },
         },
         file_panel = {
+          { "n", "<leader>e", toggle_file_panel, { desc = "Files (show and go there, or hide)" } },
+          { "n", "<leader>b", false },
           { "n", "gf", goto_file, { desc = "Open the file in its worktree tab" } },
           { "n", "-", guarded_toggle_stage_entry(actions), { desc = "Stage / unstage the selected entry" } },
           { "n", "s", guarded_toggle_stage_entry(actions), { desc = "Stage / unstage the selected entry" } },

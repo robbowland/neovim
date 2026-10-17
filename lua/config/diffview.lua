@@ -308,11 +308,18 @@ function M.statusline_file_summary()
 
   local additions = file.stats and file.stats.additions
   local deletions = file.stats and file.stats.deletions
-  if type(additions) == "number" and type(deletions) == "number" then
-    return ("%s  +%d -%d"):format(file.path, additions, deletions)
+  -- The file panel hides until wanted: say how to get it.
+  local view = require("diffview.lib").get_current_view()
+  local hint = ""
+  if view and view.panel and not view.panel:is_open() then
+    hint = "  · files: <leader>e, or the right edge"
   end
 
-  return file.path
+  if type(additions) == "number" and type(deletions) == "number" then
+    return ("%s  +%d -%d%s"):format(file.path, additions, deletions, hint)
+  end
+
+  return file.path .. hint
 end
 
 function M.has_statusline_file()
