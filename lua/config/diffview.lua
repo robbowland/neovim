@@ -322,6 +322,54 @@ function M.statusline_file_summary()
   return file.path .. hint
 end
 
+-- The diff panes' sticky header, on one line: the scopes around the code in
+-- view whose first lines have scrolled away, as treesitter-context finds them.
+-- Its own floating header is off in diffs (lua/plugins/diffview.lua): one in
+-- each pane, of different heights, would stop the panes lining up. A winbar
+-- is one line in every pane, so they still do.
+M.context_header_expr = "%{%v:lua.require'config.diffview'.context_header()%}"
+
+local context_headers = {}
+
+function M.context_header()
+  local win = vim.g.statusline_winid
+  if not (win and vim.api.nvim_win_is_valid(win)) then
+    return ""
+  end
+  local buf = vim.api.nvim_win_get_buf(win)
+  local key = table.concat({
+    buf,
+    vim.api.nvim_buf_get_changedtick(buf),
+    vim.fn.line("w0", win),
+    vim.api.nvim_win_get_cursor(win)[1],
+  }, ":")
+  local cached = context_headers[win]
+  if cached and cached.key == key then
+    return cached.text
+  end
+
+  local scopes = {}
+  local ok, context = pcall(require, "treesitter-context.context")
+  -- Large diff buffers go without treesitter (diffview_large_buffer).
+  if ok and not vim.b[buf].diffview_large_buffer then
+    -- Its lines run on from one scope to the next; each range says how many
+    -- are its scope's.
+    local got, ranges, lines = pcall(context.get, win)
+    local at = 1
+    for _, range in ipairs(got and ranges or {}) do
+      local first = vim.trim(((lines[at] or ""):gsub("%s+", " ")))
+      if first ~= "" then
+        scopes[#scopes + 1] = (first:gsub("%%", "%%%%"))
+      end
+      at = at + math.max(range[3] - range[1] + (range[4] == 0 and 0 or 1), 1)
+    end
+  end
+  -- Cut from the left when it does not fit: the innermost scope matters most.
+  local text = "%< " .. table.concat(scopes, " › ")
+  context_headers[win] = { key = key, text = text }
+  return text
+end
+
 function M.has_statusline_file()
   return M.statusline_file_summary() ~= ""
 end

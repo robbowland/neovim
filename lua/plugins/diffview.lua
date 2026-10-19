@@ -239,7 +239,8 @@ local function disable_mouse_scroll_sync()
 end
 
 -- Context headers differ in height between the panes, so their tops stop
--- lining up. Diffview flags its buffers with ts_context_disable, which
+-- lining up; each diff pane shows its context on one winbar line instead
+-- (config.diffview.context_header). Diffview flags its buffers with ts_context_disable, which
 -- treesitter-context reads (lua/plugins/treesitter-context.lua) only on
 -- BufReadPost: ask again for files that were open before the view.
 -- Diffview clears the flag on working-tree files when you switch files but
@@ -522,6 +523,7 @@ return {
           tune_diff_buffer(bufnr)
           tune_diff_window(bufnr, win)
           recheck_treesitter_context(bufnr)
+          vim.wo[win].winbar = require("config.diffview").context_header_expr
           vim.w[win].micrographics_diffview_gutter_hl = gutter_highlight(context)
           hide_source_highlights(win)
           vim.wo[win].statuscolumn = statuscolumn

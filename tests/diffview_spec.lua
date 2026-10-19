@@ -645,6 +645,42 @@ expect(
 vim.api.nvim_win_close(context_win, true)
 vim.api.nvim_buf_delete(context_buf, { force = true })
 
+-- The diff panes' context, one line each so they stay aligned: the scopes
+-- whose first lines have scrolled away, each by its first line, innermost
+-- last.
+local diffview_config = require("config.diffview")
+pcall(function()
+  require("lazy").load({ plugins = { "nvim-treesitter-context" } })
+end)
+local header_buf = vim.api.nvim_create_buf(false, true)
+local header_lines = { "local function outer(", "  a,", "  b", ")", "  local t = {" }
+for line = 1, 60 do
+  table.insert(header_lines, ("    x%d = %d,"):format(line, line))
+end
+vim.list_extend(header_lines, { "  }", "end" })
+vim.api.nvim_buf_set_lines(header_buf, 0, -1, false, header_lines)
+vim.bo[header_buf].filetype = "lua"
+local header_win = vim.api.nvim_open_win(header_buf, true, { split = "below", height = 10 })
+diff_buf_win_enter(header_buf, header_win, { symbol = "b", layout_name = "diff2_horizontal" })
+expect(
+  vim.wo[header_win].winbar == diffview_config.context_header_expr,
+  "Diffview panes should show their context on one winbar line"
+)
+vim.api.nvim_win_set_cursor(header_win, { 40, 0 })
+vim.cmd("normal! zt")
+vim.g.statusline_winid = header_win
+local header = diffview_config.context_header()
+expect(
+  header == "%< local function outer( › local t = {",
+  "the context header should name each scope out of view by its first line: " .. header
+)
+vim.api.nvim_win_set_cursor(header_win, { 1, 0 })
+vim.cmd("normal! zt")
+expect(diffview_config.context_header() == "%< ", "the context header should be empty when no scope is out of view")
+vim.g.statusline_winid = nil
+vim.api.nvim_win_close(header_win, true)
+vim.api.nvim_buf_delete(header_buf, { force = true })
+
 local which_key_options = {}
 dofile(root .. "/lua/plugins/which-key.lua").opts(nil, which_key_options)
 expect(
