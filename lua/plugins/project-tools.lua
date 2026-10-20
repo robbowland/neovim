@@ -104,22 +104,6 @@ return {
     end,
   },
   {
-    "nvimtools/none-ls.nvim",
-    optional = true,
-    opts = function(_, opts)
-      local has_terraform = vim.fn.executable("terraform") == 1
-      opts.sources = vim.tbl_filter(function(source)
-        if source.name == "prettier" then
-          return false
-        end
-        if not has_terraform and (source.name == "terraform_fmt" or source.name == "terraform_validate") then
-          return false
-        end
-        return true
-      end, opts.sources or {})
-    end,
-  },
-  {
     "stevearc/conform.nvim",
     init = function()
       vim.api.nvim_create_autocmd("FileType", {
