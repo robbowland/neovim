@@ -163,6 +163,32 @@ return {
 
     opts.sort = { redirects_last, icon_value, "group", "manual", "alphanum", "mod" }
 
+    -- Inside a group an entry need not repeat the group's name: Git's are
+    -- "Blame Line", not "Git Blame Line". which-key rewrites labels as it
+    -- draws them without knowing their group, so only words no other
+    -- group's entries start with are dropped; the keymaps keep their full
+    -- descriptions for searches such as <leader>sk. A list option replaces
+    -- which-key's own list, so its defaults come first.
+    opts.replace = opts.replace or {}
+    opts.replace.desc = {
+      { "<Plug>%(?(.*)%)?", "%1" },
+      { "^%+", "" },
+      { "<[cC]md>", "" },
+      { "<[cC][rR]>", "" },
+      { "<[sS]ilent>", "" },
+      { "^lua%s+", "" },
+      { "^call%s+", "" },
+      { "^:%s*", "" },
+      { "^Noice Picker %(Telescope/FzfLua%)$", "Picker" },
+      { "^LSP references/definitions/%.%.%. %(Trouble%)$", "References & Definitions (Trouble)" },
+      { "^Git ", "" },
+      { "^Yank ", "" },
+      { "^Database ", "" },
+      { "^Noice ", "" },
+      { "^weaver: ", "" },
+      { " %(Neotest%)$", "" },
+    }
+
     opts.spec = opts.spec or {}
     vim.list_extend(opts.spec, {
       {
@@ -183,6 +209,15 @@ return {
         { "<leader>y", group = "Yank" },
         { "g", group = "goto" },
       },
+      -- Named groups in place of raw labels: noice's +noice, and the
+      -- database's and weaver's agent keys.
+      { "<leader>sn", group = "Noice", mode = "n" },
+      { "<leader>D", group = "Database", mode = "n" },
+      { "<leader>a", group = "Agent", mode = { "n", "x" } },
+      -- One home for each action: <leader>: is <leader>sc, <leader>wm is
+      -- <leader>uZ.
+      { "<leader>:", hidden = true, mode = "n" },
+      { "<leader>wm", hidden = true, mode = "n" },
       { "<leader>-", hidden = true, mode = "n" },
       { "<leader>|", hidden = true, mode = "n" },
       { "<leader>`", hidden = true, mode = "n" },
