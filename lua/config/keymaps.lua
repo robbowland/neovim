@@ -20,6 +20,15 @@ map({ "n", "v" }, "c", '"_c', { desc = "Change without yanking" })
 map("n", "q", "<Nop>", { desc = "Nothing (macros are on Q)" })
 map("n", "Q", "q", { desc = "Record a macro (Q again to stop)" })
 
+-- Keys that open what is never used here, and are easy to hit by accident:
+-- the command-line window (ctrl+f while typing a command; q: went with q),
+-- Ex mode (gQ) and suspending nvim (ctrl+z, which freezes its pane).
+-- shift+enter while typing a command runs it, as enter does.
+map("c", "<C-f>", "<Nop>", { desc = "Nothing (the command-line window)" })
+map("n", "gQ", "<Nop>", { desc = "Nothing (Ex mode)" })
+map({ "n", "x" }, "<C-z>", "<Nop>", { desc = "Nothing (suspending nvim)" })
+map("c", "<S-CR>", "<CR>", { desc = "Run the command" })
+
 -- Invert behaviour of 'p' & 'P'
 map({ "v", "x" }, "p", "P", { desc = "Paste without overwriting register" })
 map({ "v", "x" }, "P", "p", { desc = "Paste and overwrite register" })

@@ -2,6 +2,12 @@ local colors = require("config.colors")
 
 return {
   "folke/noice.nvim",
+  -- shift+enter while typing a command runs it, as enter does
+  -- (lua/config/keymaps.lua): it is Claude Code's newline, and noice's
+  -- redirect of the output into a pane was only ever hit by accident.
+  keys = {
+    { "<S-Enter>", false, mode = "c" },
+  },
   opts = function(_, opts)
     -- Set plugin-specific colours
     local function set_context_theme()
