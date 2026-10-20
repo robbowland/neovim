@@ -14,6 +14,12 @@ map("n", "L", "$", { desc = "Move to end of line" })
 map({ "n", "v" }, "d", '"_d', { desc = "Delete without yanking" })
 map({ "n", "v" }, "c", '"_c', { desc = "Change without yanking" })
 
+-- Macros on Q, not q: they are rare here, and a stray qq (q closes many
+-- panels) records one unnoticed, which also keeps which-key quiet. Q starts
+-- a recording and Q again stops it. Buffers that map q to close keep it.
+map("n", "q", "<Nop>", { desc = "Nothing (macros are on Q)" })
+map("n", "Q", "q", { desc = "Record a macro (Q again to stop)" })
+
 -- Invert behaviour of 'p' & 'P'
 map({ "v", "x" }, "p", "P", { desc = "Paste without overwriting register" })
 map({ "v", "x" }, "P", "p", { desc = "Paste and overwrite register" })
