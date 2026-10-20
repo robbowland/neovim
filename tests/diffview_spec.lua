@@ -62,10 +62,10 @@ local snacks_keys = snacks_spec.keys(nil, {
   { "<leader>gd", desc = "Git Diff (hunks)" },
   { "<leader>gD", desc = "Git Diff (origin)" },
   { "<leader>gs", desc = "Git Status" },
+  { "<leader>ff", desc = "Find Files (Root Dir)" },
 })
-expect(#snacks_keys == 2, "Snacks should only add its explorer mapping")
+expect(#snacks_keys == 1, "Snacks should drop Diffview's keys and duplicates, and add none")
 expect(snacks_keys[1][1] == "<leader>gs", "Snacks should preserve unrelated Git mappings")
-expect(snacks_keys[2][1] == "<leader>e", "Snacks should add the explorer mapping")
 
 vim.wait(1_000, function()
   return vim.fn.exists(":DiffviewOpen") == 2
