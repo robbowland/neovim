@@ -89,6 +89,28 @@ end, { desc = "Terminal (cwd)" })
 
 map("n", "<leader>wx", "<C-w>c", { desc = "Delete Window", remap = true })
 
+-- One key per action: LazyVim's own copies of the keys above go (and
+-- <leader>` of <leader>bb, <leader>wm of <leader>uZ, <leader>K of
+-- <leader>ck).
+for _, lhs in ipairs({
+  "<leader>`",
+  "<leader>K",
+  "<leader>l",
+  "<leader>L",
+  "<leader>fT",
+  "<leader>-",
+  "<leader>|",
+  "<leader>wd",
+  "<leader>wm",
+}) do
+  pcall(vim.keymap.del, "n", lhs)
+end
+
+-- The file tree, in place of LazyVim's terminal (<leader>wt is that).
+map("n", "<leader>ft", function()
+  Snacks.explorer({ cwd = LazyVim.root() })
+end, { desc = "File Tree (Root Dir)" })
+
 -- Yank code location (file path + line number)
 map("n", "<leader>yl", function()
   local loc = vim.fn.expand("%:.") .. ":" .. vim.fn.line(".")

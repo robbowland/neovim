@@ -5,21 +5,30 @@ local popover = require("config.popover")
 return {
   "folke/snacks.nvim",
   keys = function(_, keys)
+    -- One key per action: these repeat <leader><space> (find files),
+    -- <leader>/ (grep), <leader>, (buffers), <leader>sc (command history),
+    -- <leader>xq and <leader>xl (the quickfix and location lists), or
+    -- noice's <leader>snh and <leader>snd (notifications). The file tree is
+    -- <leader>ft (lua/config/keymaps.lua).
+    local dropped = {
+      ["<leader>gd"] = true,
+      ["<leader>gD"] = true,
+      ["<leader>ff"] = true,
+      ["<leader>sg"] = true,
+      ["<leader>fb"] = true,
+      ["<leader>:"] = true,
+      ["<leader>n"] = true,
+      ["<leader>un"] = true,
+      ["<leader>sq"] = true,
+      ["<leader>sl"] = true,
+    }
     local filtered = {}
     for _, key in ipairs(keys or {}) do
-      local lhs = key[1]
       local desc = type(key.desc) == "string" and key.desc:lower() or ""
-      if lhs ~= "<leader>gd" and lhs ~= "<leader>gD" and not desc:find("github", 1, true) then
+      if not dropped[key[1]] and not desc:find("github", 1, true) then
         table.insert(filtered, key)
       end
     end
-    table.insert(filtered, {
-      "<leader>e",
-      function()
-        Snacks.explorer({ cwd = LazyVim.root() })
-      end,
-      desc = "File Tree (Root Dir)",
-    })
     return filtered
   end,
   opts = function(_, opts)

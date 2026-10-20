@@ -214,19 +214,6 @@ return {
       { "<leader>sn", group = "Noice", mode = "n" },
       { "<leader>D", group = "Database", mode = "n" },
       { "<leader>a", group = "Agent", mode = { "n", "x" } },
-      -- One home for each action: <leader>: is <leader>sc, <leader>wm is
-      -- <leader>uZ.
-      { "<leader>:", hidden = true, mode = "n" },
-      { "<leader>wm", hidden = true, mode = "n" },
-      { "<leader>-", hidden = true, mode = "n" },
-      { "<leader>|", hidden = true, mode = "n" },
-      { "<leader>`", hidden = true, mode = "n" },
-      { "<leader>l", hidden = true, mode = "n" },
-      { "<leader>L", hidden = true, mode = "n" },
-      { "<leader>K", hidden = true, mode = "n" },
-      { "<leader>ft", hidden = true, mode = "n" },
-      { "<leader>fT", hidden = true, mode = "n" },
-      { "<leader>wd", hidden = true, mode = "n" },
       {
         mode = "n",
         {
