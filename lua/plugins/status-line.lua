@@ -27,6 +27,14 @@ local function agent()
   return status and status.statusline and status.statusline() or ""
 end
 
+-- A macro being recorded: nvim's own "recording @q" is hidden (cmdheight=0,
+-- noshowmode), and a stray qq otherwise goes unnoticed while which-key
+-- stays quiet until the recording stops.
+local function recording()
+  local reg = vim.fn.reg_recording()
+  return reg ~= "" and ("[ REC @%s ]"):format(reg) or ""
+end
+
 local mode_aliases = {
   NORMAL = "nrml",
   INSERT = "insr",
@@ -43,6 +51,17 @@ return {
     "nvim-lualine/lualine.nvim",
     event = "VeryLazy",
     opts = function()
+      -- The recording token comes and goes as the recording starts and
+      -- stops, not at the next refresh (during RecordingLeave,
+      -- reg_recording() still names the register, so after it).
+      vim.api.nvim_create_autocmd({ "RecordingEnter", "RecordingLeave" }, {
+        group = vim.api.nvim_create_augroup("statusline_recording", { clear = true }),
+        callback = function()
+          vim.schedule(function()
+            require("lualine").refresh({ place = { "statusline" } })
+          end)
+        end,
+      })
       return {
         options = {
           theme = theme,
@@ -66,6 +85,13 @@ return {
           lualine_b = {},
           lualine_c = {},
           lualine_x = {
+            {
+              recording,
+              cond = function()
+                return recording() ~= ""
+              end,
+              color = { fg = colors.red },
+            },
             {
               agent,
               cond = function()
