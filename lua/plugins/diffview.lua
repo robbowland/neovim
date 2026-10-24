@@ -135,6 +135,8 @@ local function hide_file_panel()
   close_file_panel(current_view())
 end
 
+popover.on_close_all(hide_file_panel)
+
 local function hide_file_panel_on_open(view)
   vim.schedule(function()
     close_file_panel(view)

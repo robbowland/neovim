@@ -3,7 +3,15 @@ return {
   dependencies = { "nvim-lua/plenary.nvim" },
   cmd = { "Yazi" },
   keys = {
-    { "<leader>fe", "<cmd>Yazi<CR>", desc = "File Explorer" },
+    {
+      "<leader>fe",
+      function()
+        -- Close the file tree first, so yazi returns to the editor window
+        require("config.popover").close_all()
+        vim.cmd("Yazi")
+      end,
+      desc = "File Explorer",
+    },
   },
   opts = function()
     local openers = require("yazi.openers")

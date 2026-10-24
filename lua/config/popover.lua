@@ -3,6 +3,8 @@
 -- Diffview's file panel during a review). Sized when opened.
 local M = {}
 
+local closers = {}
+
 local height_ratio = 0.9 -- yazi.nvim's floating_window_scaling_factor
 local width_ratio = 0.5
 local min_width = 60
@@ -35,6 +37,19 @@ function M.float(width)
     border = M.border(),
     zindex = 50,
   }
+end
+
+-- CLOSE closes one kind of popover if it is open, for M.close_all().
+function M.on_close_all(close)
+  table.insert(closers, close)
+end
+
+-- Close every open popover, so that another (yazi on <leader>fe) replaces it
+-- instead of opening over it.
+function M.close_all()
+  for _, close in ipairs(closers) do
+    close()
+  end
 end
 
 -- A snacks picker layout (the explorer's): search above the list, no preview.
