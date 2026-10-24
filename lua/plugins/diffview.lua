@@ -322,27 +322,6 @@ local function disable_mouse_scroll_sync()
   vim.on_key(nil, mouse_scroll_namespace)
 end
 
--- A view's tab makes Neovim's tabline appear, and all it says is the view's
--- window count and buffer ("3 d//null"): hide it while any view is open.
-local showtabline_before
-
-local function hide_tabline()
-  if showtabline_before == nil then
-    showtabline_before = vim.o.showtabline
-  end
-  vim.o.showtabline = 0
-end
-
--- view_closed fires before the view leaves diffview.lib's list.
-local function restore_tabline()
-  vim.schedule(function()
-    if showtabline_before ~= nil and #require("diffview.lib").views == 0 then
-      vim.o.showtabline = showtabline_before
-      showtabline_before = nil
-    end
-  end)
-end
-
 -- Context headers differ in height between the panes, so their tops stop
 -- lining up. Diffview flags its buffers with ts_context_disable, which
 -- treesitter-context reads (lua/plugins/treesitter-context.lua) only on
@@ -602,7 +581,6 @@ return {
       persist_selections = { enabled = true },
       hooks = {
         view_opened = function(view)
-          hide_tabline()
           place_newer_pane_on_left(view)
           configure_adaptive_file_panel(view)
           hide_file_panel_on_open(view)
@@ -621,7 +599,6 @@ return {
           refresh_statusline()
         end,
         view_closed = function()
-          restore_tabline()
           restore_treesitter_context()
           refresh_statusline()
         end,
