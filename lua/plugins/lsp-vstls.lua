@@ -1,10 +1,12 @@
-local tsserver_memory = 6144
+-- Several worktrees run their own server at once, so keep each one's ceiling modest.
+-- Raise this if tsserver starts crashing with out-of-memory errors.
+local tsserver_memory = 3072
 
 local tsserver_settings = {
   tsserver = {
     -- Use one tsserver process for syntax and semantic operations
     useSyntaxServer = "never",
-    -- Raise the memory ceiling to reduce out-of-memory crashes
+    -- Cap tsserver's heap
     maxTsServerMemory = tsserver_memory,
   },
 }
@@ -15,7 +17,7 @@ return {
     servers = {
       vtsls = {
         cmd_env = {
-          -- Allow the language server to allocate more memory in large workspaces
+          -- Cap the language server's heap to match tsserver
           NODE_OPTIONS = ("--max-old-space-size=%d"):format(tsserver_memory),
         },
         settings = {
