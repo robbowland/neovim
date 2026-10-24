@@ -86,11 +86,11 @@ local diff_buf_read = hooks.diff_buf_read
 local diff_buf_win_enter = hooks.diff_buf_win_enter
 local view_enter = hooks.view_enter or function() end
 local view_leave = hooks.view_leave or function() end
-expect(type(hooks.view_opened) == "function", "Diffview should configure its adaptive file panel")
-expect(type(hooks.view_post_layout) == "function", "Diffview should preserve adaptive sizing after layout changes")
+expect(type(hooks.view_opened) == "function", "Diffview should configure its file panel popover")
+expect(type(hooks.view_post_layout) == "function", "Diffview should keep the newer pane left after layout changes")
 expect(type(diff_buf_read) == "function", "Diffview should tune large diff buffers")
 expect(type(diff_buf_win_enter) == "function", "Diffview should configure diff windows")
-expect(options.file_panel.win_config.width == 35, "Diffview should use a compact 35-column file panel")
+expect(type(options.file_panel.win_config) == "function", "Diffview should size its file panel popover when it opens")
 
 local source_groups = { "DiffAdd", "DiffChange", "DiffDelete", "DiffText", "DiffTextAdd" }
 local function expect_source_window(win)
@@ -343,11 +343,11 @@ local function stage_guard_prompts(lhs, selected, working)
   return prompted
 end
 
-expect(stage_guard_prompts("-"), "the staging guard should warn about unresolved conflict markers")
+expect(stage_guard_prompts("s"), "the staging guard should warn about unresolved conflict markers")
 expect(stage_guard_prompts("S"), "staging everything should warn about unresolved conflict markers")
 local nested_entry = { kind = "working", path = "src/example.lua", absolute_path = test_file }
 expect(
-  stage_guard_prompts("-", { kind = "working", path = "src", collapsed = false }, { nested_entry }),
+  stage_guard_prompts("s", { kind = "working", path = "src", collapsed = false }, { nested_entry }),
   "staging a directory should warn about conflict markers in its files"
 )
 -- Git ends the markers with CRLF when the file uses CRLF.
@@ -357,7 +357,7 @@ vim.fn.writefile(
   end, conflict_lines),
   test_file
 )
-expect(stage_guard_prompts("-"), "the staging guard should find conflict markers in CRLF files")
+expect(stage_guard_prompts("s"), "the staging guard should find conflict markers in CRLF files")
 vim.fn.writefile(conflict_lines, test_file)
 local staged = vim.system({ "git", "-C", test_repo, "diff", "--cached", "--name-only" }, { text = true }):wait()
 expect(staged.code == 0 and vim.trim(staged.stdout or "") == "", "cancelled staging should leave the index unchanged")
@@ -396,14 +396,27 @@ vim.cmd("tabclose")
 local view = require("diffview.lib").get_current_view()
 expect(view ~= nil, "Diffview should open a view")
 expect(vim.t.diffview_context == "feature", "full-branch diffs should identify their branch")
-expect(view.panel:get_config().position == "right", "Diffview file panel should open on the right")
+local panel_config = view.panel:get_config()
+expect(
+  panel_config.type == "float" and panel_config.relative == "editor",
+  "the Diffview file panel should be a popover over the editor"
+)
 expect(
   vim.wait(1_000, function()
-    return (view.panel:get_width() or 0) > options.file_panel.win_config.width
+    return not view.panel:is_open()
   end, 20),
-  "the focused Diffview file panel should expand to fit long entries"
+  "the Diffview file panel should stay hidden as a view opens"
 )
+local toggle_files = configured_diffview_mapping(options, "view", "<leader>ft")
+expect(toggle_files ~= nil and type(toggle_files[3]) == "function", "<leader>ft should show a review's files")
+toggle_files[3]()
+expect(view.panel:is_focused(), "<leader>ft should show the file panel popover and go there")
 local expanded_panel_width = view.panel:get_width()
+local popover_position = vim.api.nvim_win_get_position(view.panel.winid)
+expect(
+  math.abs(popover_position[2] + expanded_panel_width / 2 - vim.o.columns / 2) <= 2,
+  "the file panel popover should be centred over the editor"
+)
 local long_panel_line
 for _, line in ipairs(vim.api.nvim_buf_get_lines(view.panel.bufid, 0, -1, false)) do
   if line:find(vim.fs.basename(long_relative_path), 1, true) then
@@ -467,17 +480,15 @@ expect(source_columns.Added < source_columns.Removed, "Diffview should place the
 vim.api.nvim_set_current_win(source_window)
 expect(
   vim.wait(1_000, function()
-    return view.panel:get_width() == options.file_panel.win_config.width
+    return not view.panel:is_open()
   end, 20),
-  "the Diffview file panel should contract when focus returns to the diff"
+  "the file panel popover should close when focus returns to the diff"
 )
-vim.api.nvim_set_current_win(view.panel.winid)
-expect(
-  vim.wait(1_000, function()
-    return view.panel:get_width() == expanded_panel_width
-  end, 20),
-  "the Diffview file panel should expand again when focused"
-)
+toggle_files[3]()
+expect(view.panel:is_focused(), "<leader>ft should show the file panel popover again")
+configured_diffview_mapping(options, "file_panel", "<leader>ft")[3]()
+expect(not view.panel:is_open(), "<leader>ft inside the file panel popover should close it")
+vim.api.nvim_set_current_win(source_window)
 if local_buffer and package.loaded.gitsigns then
   vim.wait(1_000, function()
     return vim.b[local_buffer].gitsigns_status_dict ~= nil
@@ -569,17 +580,22 @@ expect_command_mapping("<leader>gm", "DiffviewOpen HEAD~1", "Git Diff (Last Comm
 expect_command_mapping("<leader>gM", "DiffviewOpen HEAD~1..HEAD", "Git Diff (Last Commit)")
 expect(configured_mapping("<leader>gf") == nil, "Diffview should preserve LazyVim's file-history picker")
 
-for _, lhs in ipairs({ "-", "s", "S", "<leader>cw" }) do
+for _, lhs in ipairs({ "s", "S", "<leader>cw" }) do
   local mapping = configured_diffview_mapping(options, "file_panel", lhs)
   expect(mapping ~= nil and type(mapping[3]) == "function", lhs .. " should use a guarded Diffview action")
 end
 local restore_mapping = configured_diffview_mapping(options, "file_panel", "X")
 expect(
-  restore_mapping ~= nil and restore_mapping[4].desc == "Restore entry to the older state",
+  restore_mapping ~= nil and restore_mapping[4].desc == "Restore to the older state",
   "X should describe restoration independently of pane position"
 )
-local merge_mapping = configured_diffview_mapping(options, "view", "<leader>cw")
-expect(merge_mapping ~= nil and type(merge_mapping[3]) == "function", "Diffview views should save resolved merge files")
+for _, layout in ipairs({ "diff3", "diff4" }) do
+  local merge_mapping = configured_diffview_mapping(options, layout, "<leader>cw")
+  expect(
+    merge_mapping ~= nil and type(merge_mapping[3]) == "function",
+    "Diffview merges should save resolved merge files"
+  )
+end
 for _, fold_mapping in ipairs({
   { lhs = "zR", description = "Expand all unchanged sections" },
   { lhs = "zM", description = "Collapse all unchanged sections" },

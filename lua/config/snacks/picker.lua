@@ -72,9 +72,7 @@ local function selected_icon_fg(base_hl)
   return brighten_hex(base_hex, 0.15)
 end
 
-local function frame_border()
-  return vim.g.colors_name == "micrographics" and "single" or "rounded"
-end
+local frame_border = require("config.popover").border
 
 -- icon highlight derivation ---------------------------------------------------
 

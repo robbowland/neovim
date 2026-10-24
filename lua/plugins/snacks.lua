@@ -27,8 +27,12 @@ return {
     opts.explorer = opts.explorer or {}
     opts.picker = opts.picker or {}
     opts.picker.sources = opts.picker.sources or {}
+    -- The file tree is a popover (config.popover): picking a file, or
+    -- leaving it, closes it.
     opts.picker.sources.explorer = vim.tbl_deep_extend("force", opts.picker.sources.explorer or {}, {
-      layout = { layout = { position = "right" } },
+      auto_close = true,
+      jump = { close = true },
+      layout = require("config.popover").snacks_layout,
     })
 
     picker.setup(opts, colors)

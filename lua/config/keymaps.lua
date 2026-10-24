@@ -57,6 +57,13 @@ map("n", "<leader>uL", function()
   LazyVim.news.changelog()
 end, { desc = "LazyVim Changelog" })
 
+-- The file tree, a popover (lua/plugins/snacks.lua); in a Diffview review
+-- the same keys show the review's files. LazyVim's terminal here is on
+-- <leader>wt.
+map("n", "<leader>ft", function()
+  Snacks.explorer({ cwd = LazyVim.root() })
+end, { desc = "File Tree (Root Dir)" })
+
 -- Terminal aliases under the <leader>w group
 map("n", "<leader>wt", function()
   Snacks.terminal(nil, { cwd = LazyVim.root() })

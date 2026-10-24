@@ -312,7 +312,7 @@ function M.statusline_file_summary()
   local view = require("diffview.lib").get_current_view()
   local hint = ""
   if view and view.panel and not view.panel:is_open() then
-    hint = "  · files: <leader>e, or the right edge"
+    hint = "  · files: <leader>ft"
   end
 
   if type(additions) == "number" and type(deletions) == "number" then

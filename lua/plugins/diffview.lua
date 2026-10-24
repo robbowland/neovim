@@ -12,8 +12,6 @@ local mouse_scroll_keycodes = {
 }
 local mouse_scroll_namespace = vim.api.nvim_create_namespace("micrographics_diffview_mouse_scroll")
 local large_diff_line_limit = 10000
-local file_panel_compact_width = 35
-local file_panel_min_editor_width = 20
 
 local function place_newer_pane_on_left(view)
   local layout = view and view.cur_layout
@@ -44,21 +42,21 @@ local function place_newer_pane_on_left(view)
 end
 
 local refresh_statusline = require("config.diffview").refresh_statusline
+local popover = require("config.popover")
 
-local function file_panel_max_width()
-  local preserve_editor = vim.o.columns - file_panel_min_editor_width
-  local proportional_width = math.floor(vim.o.columns * 0.6)
-
-  return math.max(file_panel_compact_width, math.min(preserve_editor, proportional_width))
+local function current_view()
+  local lib = package.loaded["diffview.lib"]
+  return lib and lib.get_current_view()
 end
 
+-- The widest panel line, so the popover shows every entry whole.
 local function file_panel_content_width(view)
   local panel = view and view.panel
   if not (panel and panel.bufid and vim.api.nvim_buf_is_valid(panel.bufid)) then
-    return file_panel_compact_width
+    return 0
   end
 
-  local width = file_panel_compact_width
+  local width = 0
   for _, line in ipairs(vim.api.nvim_buf_get_lines(panel.bufid, 0, -1, false)) do
     width = math.max(width, vim.fn.strdisplaywidth(line) + 2)
   end
@@ -68,139 +66,56 @@ local function file_panel_content_width(view)
     width = math.max(width, vim.fn.strdisplaywidth(vim.fn.fnamemodify(root, ":~")) + 6)
   end
 
-  return math.min(width, file_panel_max_width())
+  return width
 end
 
--- Only a split beside the diff has a width to adapt.
-local function is_side_split(panel)
-  local config = panel:get_config()
-  return config.type == "split" and vim.tbl_contains({ "left", "right" }, config.position)
+-- The file panel is a popover (config.popover) over the diff: hidden as a
+-- view opens, shown by <leader>ft (or <leader>e), and closed by the same
+-- keys, q, <esc>, picking a file, or anything else that leaves it.
+local function file_panel_win_config()
+  local width = popover.width(file_panel_content_width(current_view()))
+  return vim.tbl_extend("force", { type = "float" }, popover.float(width))
 end
 
-local function set_file_panel_width(view, width)
+local function close_file_panel(view)
   local panel = view and view.panel
-  if not (panel and panel:is_open() and is_side_split(panel)) or panel:get_width() == width then
-    return
-  end
-
-  vim.api.nvim_win_set_width(panel.winid, width)
-  panel:render()
-  panel:redraw()
-end
-
--- The panel fits its entries while focused and is compact otherwise.
-local function fit_file_panel(view)
-  set_file_panel_width(view, file_panel_content_width(view))
-end
-
-local function compact_file_panel(view)
-  set_file_panel_width(view, file_panel_compact_width)
-end
-
-local function size_file_panel_to_focus(view)
-  if view and view.panel and view.panel:is_focused() then
-    fit_file_panel(view)
-  else
-    compact_file_panel(view)
+  if panel and panel:is_open() then
+    panel:close()
+    refresh_statusline()
   end
 end
 
-local function configure_adaptive_file_panel(view)
+local function configure_file_panel_popover(view)
   local panel = view and view.panel
-  if not (panel and panel.on_autocmd and is_side_split(panel)) then
+  if not (panel and panel.on_autocmd) then
     return
   end
 
   panel:on_autocmd("WinEnter", {
     callback = function()
-      fit_file_panel(view)
       refresh_statusline()
     end,
   })
+  -- Scheduled: a file picked moves the cursor to the diff after leaving.
   panel:on_autocmd("WinLeave", {
     callback = function()
-      compact_file_panel(view)
-      refresh_statusline()
+      vim.schedule(function()
+        if not panel:is_focused() then
+          close_file_panel(view)
+        end
+      end)
     end,
   })
 
   view.emitter:on("files_updated", function()
-    size_file_panel_to_focus(view)
     refresh_statusline()
   end)
   view.emitter:on("file_open_post", function()
     refresh_statusline()
   end)
-
-  vim.schedule(function()
-    size_file_panel_to_focus(view)
-    refresh_statusline()
-  end)
 end
 
--- The file panel stays out of the diff's way: hidden as a view opens,
--- shown while the mouse rests at the editor's right edge (hidden again once
--- it moves back into the diff, unless you went into the panel), and
--- <leader>e shows it and goes there, or hides it from inside.
-local hover_namespace = vim.api.nvim_create_namespace("micrographics_diffview_hover")
-local mouse_move_keycode = vim.api.nvim_replace_termcodes("<MouseMove>", true, false, true)
-local hover_edge = 2 -- columns at the right edge that show the panel
-local hover_slack = 4 -- columns into the diff before a shown panel hides
-local mousemoveevent_before
-
-local function current_view()
-  local lib = package.loaded["diffview.lib"]
-  return lib and lib.get_current_view()
-end
-
-local function hover_file_panel()
-  local view = current_view()
-  local panel = view and view.panel
-  if not (panel and is_side_split(panel)) then
-    return
-  end
-
-  local pos = vim.fn.getmousepos()
-  if not panel:is_open() then
-    local in_editor = pos.screenrow > 0 and pos.screenrow <= vim.o.lines - vim.o.cmdheight - 1
-    if in_editor and pos.screencol > vim.o.columns - hover_edge then
-      view.micrographics_panel_hovered = true
-      panel:open()
-      compact_file_panel(view)
-      refresh_statusline()
-    end
-  elseif view.micrographics_panel_hovered and not panel:is_focused() then
-    local panel_col = vim.fn.win_screenpos(panel.winid)[2]
-    if pos.screencol < panel_col - hover_slack then
-      view.micrographics_panel_hovered = false
-      panel:close()
-      refresh_statusline()
-    end
-  end
-end
-
-local function enable_file_panel_hover()
-  if mousemoveevent_before == nil then
-    mousemoveevent_before = vim.o.mousemoveevent
-  end
-  vim.o.mousemoveevent = true
-  vim.on_key(function(key, typed)
-    if (typed ~= "" and typed or key) == mouse_move_keycode then
-      vim.schedule(hover_file_panel)
-    end
-  end, hover_namespace)
-end
-
-local function disable_file_panel_hover()
-  vim.on_key(nil, hover_namespace)
-  if mousemoveevent_before ~= nil then
-    vim.o.mousemoveevent = mousemoveevent_before
-    mousemoveevent_before = nil
-  end
-end
-
--- <leader>e: a hidden panel shows and takes the cursor, a shown one takes
--- it (and stays), and from inside the panel it hides.
+-- <leader>ft: show the popover and go there; from inside it, close it.
 local function toggle_file_panel()
   local view = current_view()
   local panel = view and view.panel
@@ -208,22 +123,21 @@ local function toggle_file_panel()
     return
   end
 
-  view.micrographics_panel_hovered = false
   if panel:is_focused() then
-    panel:close()
+    close_file_panel(view)
   else
     panel:focus()
+    refresh_statusline()
   end
-  refresh_statusline()
+end
+
+local function hide_file_panel()
+  close_file_panel(current_view())
 end
 
 local function hide_file_panel_on_open(view)
   vim.schedule(function()
-    local panel = view and view.panel
-    if panel and panel:is_open() and is_side_split(panel) then
-      panel:close()
-      refresh_statusline()
-    end
+    close_file_panel(view)
   end)
 end
 
@@ -582,20 +496,16 @@ return {
       hooks = {
         view_opened = function(view)
           place_newer_pane_on_left(view)
-          configure_adaptive_file_panel(view)
+          configure_file_panel_popover(view)
           hide_file_panel_on_open(view)
         end,
         view_enter = function(view)
           place_newer_pane_on_left(view)
           enable_mouse_scroll_sync()
-          enable_file_panel_hover()
-          size_file_panel_to_focus(view)
           refresh_statusline()
         end,
-        view_leave = function(view)
-          compact_file_panel(view)
+        view_leave = function()
           disable_mouse_scroll_sync()
-          disable_file_panel_hover()
           refresh_statusline()
         end,
         view_closed = function()
@@ -604,9 +514,6 @@ return {
         end,
         view_post_layout = function(view)
           place_newer_pane_on_left(view)
-          vim.schedule(function()
-            size_file_panel_to_focus(view)
-          end)
         end,
         diff_buf_read = tune_diff_buffer,
         diff_buf_win_enter = function(bufnr, win, context)
@@ -622,7 +529,7 @@ return {
         end,
       },
       file_panel = {
-        win_config = { position = "right", width = file_panel_compact_width },
+        win_config = file_panel_win_config,
       },
       -- Only the keys a review, staging and the odd merge use; diffview's
       -- other defaults (layouts, splits, tabs, commit logs, listing styles,
@@ -632,7 +539,8 @@ return {
         view = vim.list_extend({
           { "n", "<tab>", actions.select_next_entry, { desc = "Next file" } },
           { "n", "<s-tab>", actions.select_prev_entry, { desc = "Previous file" } },
-          { "n", "<leader>e", toggle_file_panel, { desc = "Files (show and go there, or hide)" } },
+          { "n", "<leader>ft", toggle_file_panel, { desc = "Files (show and go there)" } },
+          { "n", "<leader>e", toggle_file_panel, { desc = "Files (show and go there)" } },
           { "n", "gf", goto_file, { desc = "Open the file in its worktree tab" } },
           { "n", "zR", expand_all_folds, { desc = "Expand all unchanged sections" } },
           { "n", "zM", collapse_all_folds, { desc = "Collapse all unchanged sections" } },
@@ -670,12 +578,16 @@ return {
           { "n", "k", actions.prev_entry, { desc = "Up" } },
           { "n", "<down>", actions.next_entry, { desc = "Down" } },
           { "n", "<up>", actions.prev_entry, { desc = "Up" } },
-          { "n", "<cr>", actions.select_entry, { desc = "Show this file's diff" } },
-          { "n", "<LeftRelease>", actions.select_entry, { desc = "Show this file's diff" } },
+          -- Into the diff, which closes the popover; a directory folds.
+          { "n", "<cr>", actions.focus_entry, { desc = "Show this file's diff" } },
+          { "n", "<LeftRelease>", actions.focus_entry, { desc = "Show this file's diff" } },
           { "n", "za", actions.toggle_fold, { desc = "Fold or unfold the directory" } },
           { "n", "<tab>", actions.select_next_entry, { desc = "Next file" } },
           { "n", "<s-tab>", actions.select_prev_entry, { desc = "Previous file" } },
-          { "n", "<leader>e", toggle_file_panel, { desc = "Files (hide)" } },
+          { "n", "<leader>ft", toggle_file_panel, { desc = "Close" } },
+          { "n", "<leader>e", toggle_file_panel, { desc = "Close" } },
+          { "n", "q", hide_file_panel, { desc = "Close" } },
+          { "n", "<esc>", hide_file_panel, { desc = "Close" } },
           { "n", "gf", goto_file, { desc = "Open the file in its worktree tab" } },
           { { "n", "x" }, "w", actions.toggle_select_entry, { desc = "Mark reviewed" } },
           { "n", "H", actions.toggle_hide_selected, { desc = "Hide or show the reviewed" } },
