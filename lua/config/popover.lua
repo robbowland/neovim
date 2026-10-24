@@ -4,8 +4,8 @@
 local M = {}
 
 local height_ratio = 0.9 -- yazi.nvim's floating_window_scaling_factor
-local width_ratio = 0.4
-local min_width = 50
+local width_ratio = 0.5
+local min_width = 60
 
 function M.border()
   return vim.g.colors_name == "micrographics" and "single" or "rounded"
