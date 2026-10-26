@@ -106,11 +106,6 @@ for _, lhs in ipairs({
   pcall(vim.keymap.del, "n", lhs)
 end
 
--- The file tree, in place of LazyVim's terminal (<leader>wt is that).
-map("n", "<leader>ft", function()
-  Snacks.explorer({ cwd = LazyVim.root() })
-end, { desc = "File Tree (Root Dir)" })
-
 -- Yank code location (file path + line number)
 map("n", "<leader>yl", function()
   local loc = vim.fn.expand("%:.") .. ":" .. vim.fn.line(".")
