@@ -63,4 +63,41 @@ expect(
 )
 
 vim.fn.delete(project_root, "rf")
+
+local function git(dir, ...)
+  local result = vim
+    .system(vim.list_extend({ "git", "-C", dir, "-c", "user.name=spec", "-c", "user.email=spec@example.com" }, { ... }))
+    :wait()
+  assert(result.code == 0, result.stderr)
+end
+
+local repository = vim.uv.fs_realpath(vim.fn.tempname()) or vim.fn.tempname()
+vim.fn.delete(repository, "rf")
+local main_checkout = repository .. "/main"
+local worktree = repository .. "/worktree"
+vim.fn.mkdir(main_checkout, "p")
+git(main_checkout, "init", "--quiet")
+git(main_checkout, "commit", "--quiet", "--allow-empty", "--message", "init")
+git(main_checkout, "worktree", "add", "--quiet", worktree)
+vim.fn.mkdir(worktree .. "/sdk", "p")
+local main_python = vim.uv.fs_realpath(main_checkout) .. "/sdk/.venv/bin/python"
+executable(main_python)
+
+local worktree_config = { root_dir = worktree .. "/sdk" }
+before_init({}, worktree_config)
+expect(
+  worktree_config.settings.python.pythonPath == main_python,
+  "BasedPyright should use the main checkout's environment when a worktree has none"
+)
+
+local worktree_python = worktree .. "/sdk/.venv/bin/python"
+executable(worktree_python)
+worktree_config = { root_dir = worktree .. "/sdk" }
+before_init({}, worktree_config)
+expect(
+  worktree_config.settings.python.pythonPath == worktree_python,
+  "BasedPyright should prefer the worktree's own environment"
+)
+
+vim.fn.delete(repository, "rf")
 print(("lsp-python: %d checks passed"):format(checks))

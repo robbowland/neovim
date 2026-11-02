@@ -28,15 +28,55 @@ local function resolve_python_root(bufnr, on_dir)
   end
 end
 
+local function git_lines(dir, arguments)
+  local result = vim.system(vim.list_extend({ "git", "-C", dir }, arguments), { text = true }):wait()
+  if result.code ~= 0 then
+    return nil
+  end
+  return vim.split(vim.trim(result.stdout), "\n", { plain = true })
+end
+
+-- The same directory in the repository's main checkout, when root_dir is in a
+-- linked worktree.
+local function main_checkout_dir(root_dir)
+  local toplevel = git_lines(root_dir, { "rev-parse", "--show-toplevel" })
+  local worktrees = git_lines(root_dir, { "worktree", "list", "--porcelain" })
+  local main = worktrees and worktrees[1]:match("^worktree (.+)$")
+  if not (toplevel and main) or main == toplevel[1] then
+    return nil
+  end
+
+  local relative = vim.fs.relpath(toplevel[1], vim.uv.fs_realpath(root_dir) or root_dir)
+  if relative == nil then
+    return nil
+  end
+  return relative == "." and main or vim.fs.joinpath(main, relative)
+end
+
+local function venv_executable(dir, name)
+  local executable = vim.fs.joinpath(dir, ".venv", "bin", name)
+  if vim.fn.executable(executable) == 1 then
+    return executable
+  end
+end
+
+-- Worktrees from weaver and agents have no .venv until something runs uv
+-- there, so the main checkout's environment stands in: without one,
+-- BasedPyright analyses against Mason's Python and every third-party import
+-- is unresolved. A running server keeps the environment it started with;
+-- :LspRestart after the worktree gets its own.
 local function project_venv_executable(root_dir, name)
   if root_dir == nil then
     return nil
   end
 
-  local executable = vim.fs.joinpath(root_dir, ".venv", "bin", name)
-  if vim.fn.executable(executable) == 1 then
+  local executable = venv_executable(root_dir, name)
+  if executable then
     return executable
   end
+
+  local main_dir = main_checkout_dir(root_dir)
+  return main_dir and venv_executable(main_dir, name)
 end
 
 local function configure_project_python(_, config)
