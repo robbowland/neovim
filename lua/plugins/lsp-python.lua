@@ -121,6 +121,11 @@ return {
         enabled = true,
         before_init = configure_project_python,
         cmd = project_command("basedpyright-langserver", { "--stdio" }),
+        cmd_env = {
+          -- Pyright only empties its caches near the heap limit, so a lower limit stops each
+          -- worktree's server growing for days. Raise it if hovers start re-analysing constantly.
+          NODE_OPTIONS = "--max-old-space-size=1536",
+        },
         settings = {
           basedpyright = {
             disableOrganizeImports = true, -- Ruff handles import organization.
